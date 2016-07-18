@@ -97,8 +97,4 @@ app.controller('MainController', ['$mdSidenav', '$window', 'UiEvents', '$locatio
                 position: 'top right'
             });
         });
-
-        events.on('change-tab', function (msg) {
-            main.select(msg.index);
-        });
     }]);
