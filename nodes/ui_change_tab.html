@@ -1,0 +1,27 @@
+<script type="text/javascript">
+    RED.nodes.registerType('ui_change_tab', {
+        category: 'dashboard',
+        color: 'rgb(119, 198, 204)',
+        defaults: {
+            name: {value: 'change tab'},
+        },
+        inputs:1,
+        outputs:0,
+        align: "right",
+        icon: "ui_link.png",
+        paletteLabel: 'change tab',
+        label: function() { return this.name || "change tab"; }
+    });
+</script>
+
+<script type="text/x-red" data-template-name="ui_change_tab">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="ui_change_tab">
+    <p>Change the current tab being displayed.</p>
+    <p><code>msg.topic</code> is used as the index.</p>
+</script>
