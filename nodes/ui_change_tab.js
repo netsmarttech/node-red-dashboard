@@ -7,7 +7,7 @@ module.exports = function(RED) {
 
         this.on('input', function(msg) {
             ui.emit('change-tab', {
-                index: parseInt(msg.payload) || 0
+                target: msg.payload
             });
         });
     }

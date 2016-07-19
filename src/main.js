@@ -98,7 +98,33 @@ app.controller('MainController', ['$mdSidenav', '$window', 'UiEvents', '$locatio
             });
         });
 
-        events.on('change-tab', function (msg) {
-            main.select(msg.index);
+        events.on('change-tab', function(msg) {
+            var index;
+
+            if (typeof msg.target === 'string') {
+                for (i in main.tabs) {
+                    if (msg.target == main.tabs[i].header) {
+                        main.select(i);
+                        return;
+                    }
+                }
+
+                for (i in main.links) {
+                    if (msg.target == main.links[i].name) {
+                        main.open(main.links[i], i);
+                        return;
+                    }
+                }
+            }
+
+            index = parseInt(msg.target);
+            if(Number.isNaN(index) || index < 0) return;
+
+            if (index < main.tabs.length) {
+                main.select(index);
+            } else if ((index - main.tabs.length) < main.links.length) {
+                index -= main.tabs.length
+                main.open(main.links[index], index);
+            }
         });
     }]);
