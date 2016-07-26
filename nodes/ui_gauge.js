@@ -22,6 +22,10 @@ module.exports = function (RED) {
         gageoptions.levelColors = {'theme-dark':['#00B500', '#E6E600', '#CA3838']};
         gageoptions.compassColor = {'theme-dark':'#0b8489', 'theme-light':'#1784be'};
 
+        if(config.gcolors) {
+          gageoptions.levelColors = {'theme-dark': config.gcolors.split(/[\s,;]+/)};
+        }
+
         var waveoptions = {};
         waveoptions.circleColor = {'theme-dark':'#097479', 'theme-light':'#0094ce'};
         waveoptions.waveColor = {'theme-dark':'#097479', 'theme-light':'#0094ce'};
