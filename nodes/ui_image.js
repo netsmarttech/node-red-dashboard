@@ -10,6 +10,17 @@ module.exports = function (RED) {
         RED.nodes.createNode(this, config);
         var node = this;
 
+        var currentImage = null;
+
+        // console.log("--->> Node: ", node);
+
+        // console.log("---->>>>>>>>>>");
+
+        var hei = Number(config.height || 0);
+
+        var image;
+        var defines;
+
         var fileInterface = new FileInterface();
 
         var pathDir = path.join(process.cwd(), "public", "uiimage", "upload");
@@ -86,8 +97,6 @@ module.exports = function (RED) {
 
         ///------> API
 
-        // console.log("----->> CONFIG: ", config);
-
         var group = RED.nodes.getNode(config.group);
 
         if (!group) {
@@ -106,7 +115,7 @@ module.exports = function (RED) {
             }
         }
 
-        var hei = Number(config.height || 0);
+        // var hei = Number(config.height || 0);
         var previousTemplate = null
 
         //--> Lado a Lado - background-repeat: repeat
@@ -114,26 +123,97 @@ module.exports = function (RED) {
         //--> Centralizar (centro da imagem) - background-size: 100%; + background-position: center;
         //--> Ampliar (estica a imagem) - size = cover
 
-        var image = "<div style=\"width: 100%; height: 100%; background-image: url('" + config.path.path + "');";
+
+        // image = "<div style=\"width: 100%; height: 100%; background-image: url('" + config.path.path + "');";
+
+        //image = "<div style=\"width: 100%; height: 100%; background-image: url(ng-bind-html=\"msg.image\");";
+
+        // image = "<div ng-style=\"msg.image\"> {{msg.image}} </div>";
+
+        image = "<div ng-style=\"msg.image\"></div>";
+
 
         if (config.layout === 'adjust') {
-            image += "background-size: contain; background-position: center; background-repeat: no-repeat\" > </div>"
+
+            // console.log("--> adjust");
+
+            defines = {};
+
+            defines = {
+                'width': '100%',
+                'height': '100%',
+                'background-size': 'contain',
+                'background-position': 'center',
+                'background-repeat': 'no-repeat',
+                'background-image': "url('" + config.path.path + "')"
+            };
+
+            if(currentImage != null){
+                node.emit('input', {payload: null});
+            }
         }
 
         if (config.layout === 'center') {
-            image += "background-size: 100%; background-position: center; background-repeat: no-repeat\" > </div>"
+
+            // console.log("--> center");
+
+            defines = {};
+
+            defines = {
+                'width': '100%',
+                'height': '100%',
+                'background-size': '100%',
+                'background-position': 'center',
+                'background-repeat': 'no-repeat',
+                'background-image': "url('" + config.path.path + "')"
+            };
+
+            if(currentImage != null){
+                node.emit('input', {payload: null});
+            }
         }
 
         if (config.layout === 'expand') {
-            image += "background-size: cover; background-position: center; background-repeat: no-repeat\" > </div>"
+
+            // console.log("--> expand");            
+
+            defines = {};
+
+            defines = {
+                'width': '100%',
+                'height': '100%',
+                'background-size': 'cover',
+                'background-position': 'center',
+                'background-repeat': 'no-repeat',
+                'background-image': "url('" + config.path.path + "')"
+            };
+
+            if(currentImage != null){
+                node.emit('input', {payload: null});
+            }
         }
 
         if (config.layout === 'side') {
-            image += "background-repeat: repeat\" > </div>"
+
+            // console.log("--> side"); 
+
+            defines = {};
+
+            defines = {
+                'width': '100%',
+                'height': '100%',
+                'background-repeat': 'repeat',
+                'background-image': "url('" + config.path.path + "')"
+            };
+
+            if(currentImage != null){
+                node.emit('input', {payload: null});
+            }
+
         }
 
         var done = ui.add({
-            emitOnlyNewValues: false,
+            //emitOnlyNewValues: false,
             node: node,
             tab: tab,
             group: group,
@@ -141,15 +221,29 @@ module.exports = function (RED) {
                 type: 'template',
                 width: config.width || 6,
                 height: hei,
-                format: image, //config.format,
+                format: image //config.format,
             },
             beforeEmit: function (msg, value) {
+                
+                // console.log("Chamou dentro beforeEmit - MSG: ", msg, " - value: ", value);
+
+                if(msg.init != true){
+                    defines['background-image'] = "url('" + value + "')";
+                    msg.image = defines;
+                }else{
+                    msg.image = value;
+                }          
+                               
+
                 var properties = Object.getOwnPropertyNames(msg).filter(function (p) {
                     return p[0] != '_';
                 });
+
+
                 var clonedMsg = {
                     templateScope: config.templateScope
                 };
+
                 for (var i = 0; i < properties.length; i++) {
                     var property = properties[i];
                     clonedMsg[property] = msg[property];
@@ -168,16 +262,15 @@ module.exports = function (RED) {
                     previousTemplate = clonedMsg.template
                 }
 
-                return {
+                return { //Return da função
                     msg: clonedMsg
                 };
-            },
-            beforeSend: function (msg, original) {
-                if (original) {
-                    return original.msg;
-                }
+
             }
         });
+
+        node.emit('input', {init: true, payload : defines});
+
         node.on("close", done);
     }
     RED.nodes.registerType("ui_image", ImageNode);
