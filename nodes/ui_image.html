@@ -55,7 +55,12 @@
                 group: "#node-input-group"
             });
 
-            getListImages(that.path.ref);
+
+            if (that.path != undefined) {
+                getListImages(that.path.ref);
+            }
+
+            getListImages(undefined);
 
             function getListImages(selected) {
 
@@ -90,6 +95,7 @@
                         $("#node-input-file").append(optgroup);
 
                         if (found) {
+                            $("#node-input-link").val(that.path.path);
                             $("#image-preview").attr('src', that.path.path).show();
                         }
 
@@ -117,6 +123,7 @@
 
                     $.get(url, function (data) {
                         that.path = data;
+                        $("#node-input-link").val(data.path);
                         $("#image-preview").attr('src', data.path).show();
                     });
                 }
@@ -124,7 +131,6 @@
 
             $("#bt-remove-image").click(function () {
                 var value = $('#node-input-file').val();
-                console.log("O que temos? " + value);
 
                 var newUrl = "/uiimage/" + value;
 
@@ -226,6 +232,8 @@
 
                         getListImages(data.ref);
 
+                        $("#node-input-link").val(data.path);
+
                         $("#upload-file").hide();
 
                         $("#image-preview").attr('src', data.path).show();
@@ -302,8 +310,14 @@
                 </ul>
             </div>
         </div>
-
     </div>
+
+    <div class="form-row">
+        <label for="node-input-link">
+            <i class="fa fa-link"></i> Link </label>
+        <input type="text" id="node-input-link">
+    </div>
+
     <!-- List -->
 
     <!-- Add Image -->

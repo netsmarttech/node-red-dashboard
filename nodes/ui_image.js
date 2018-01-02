@@ -12,10 +12,6 @@ module.exports = function (RED) {
 
         var currentImage = null;
 
-        // console.log("--->> Node: ", node);
-
-        // console.log("---->>>>>>>>>>");
-
         var hei = Number(config.height || 0);
 
         var image;
@@ -115,7 +111,6 @@ module.exports = function (RED) {
             }
         }
 
-        // var hei = Number(config.height || 0);
         var previousTemplate = null
 
         //--> Lado a Lado - background-repeat: repeat
@@ -123,15 +118,7 @@ module.exports = function (RED) {
         //--> Centralizar (centro da imagem) - background-size: 100%; + background-position: center;
         //--> Ampliar (estica a imagem) - size = cover
 
-
-        // image = "<div style=\"width: 100%; height: 100%; background-image: url('" + config.path.path + "');";
-
-        //image = "<div style=\"width: 100%; height: 100%; background-image: url(ng-bind-html=\"msg.image\");";
-
-        // image = "<div ng-style=\"msg.image\"> {{msg.image}} </div>";
-
         image = "<div ng-style=\"msg.image\"></div>";
-
 
         if (config.layout === 'adjust') {
 
@@ -148,8 +135,10 @@ module.exports = function (RED) {
                 'background-image': "url('" + config.path.path + "')"
             };
 
-            if(currentImage != null){
-                node.emit('input', {payload: null});
+            if (currentImage != null) {
+                node.emit('input', {
+                    payload: null
+                });
             }
         }
 
@@ -168,8 +157,10 @@ module.exports = function (RED) {
                 'background-image': "url('" + config.path.path + "')"
             };
 
-            if(currentImage != null){
-                node.emit('input', {payload: null});
+            if (currentImage != null) {
+                node.emit('input', {
+                    payload: null
+                });
             }
         }
 
@@ -188,8 +179,10 @@ module.exports = function (RED) {
                 'background-image': "url('" + config.path.path + "')"
             };
 
-            if(currentImage != null){
-                node.emit('input', {payload: null});
+            if (currentImage != null) {
+                node.emit('input', {
+                    payload: null
+                });
             }
         }
 
@@ -206,14 +199,15 @@ module.exports = function (RED) {
                 'background-image': "url('" + config.path.path + "')"
             };
 
-            if(currentImage != null){
-                node.emit('input', {payload: null});
+            if (currentImage != null) {
+                node.emit('input', {
+                    payload: null
+                });
             }
 
         }
 
         var done = ui.add({
-            //emitOnlyNewValues: false,
             node: node,
             tab: tab,
             group: group,
@@ -224,16 +218,16 @@ module.exports = function (RED) {
                 format: image //config.format,
             },
             beforeEmit: function (msg, value) {
-                
+
                 // console.log("Chamou dentro beforeEmit - MSG: ", msg, " - value: ", value);
 
-                if(msg.init != true){
+                if (msg.init != true) {
                     defines['background-image'] = "url('" + value + "')";
                     msg.image = defines;
-                }else{
+                } else {
                     msg.image = value;
-                }          
-                               
+                }
+
 
                 var properties = Object.getOwnPropertyNames(msg).filter(function (p) {
                     return p[0] != '_';
@@ -269,7 +263,10 @@ module.exports = function (RED) {
             }
         });
 
-        node.emit('input', {init: true, payload : defines});
+        node.emit('input', {
+            init: true,
+            payload: defines
+        });
 
         node.on("close", done);
     }
