@@ -58,9 +58,9 @@
 
             if (that.path != undefined) {
                 getListImages(that.path.ref);
-            }else{
+            } else {
                 getListImages(undefined);
-            }           
+            }
 
             function getListImages(selected) {
 
@@ -95,7 +95,7 @@
                         $("#node-input-file").append(optgroup);
 
                         if (found) {
-                            $("#node-input-link").val(that.path.path);
+                            $("#node-input-link").val(that.path.ref);
                             $("#image-preview").attr('src', that.path.path).show();
                         }
 
@@ -120,7 +120,7 @@
 
                 if (value != null) {
                     var url = '/uiimage/' + value;
-                    $("#node-input-link").val(url);
+                    $("#node-input-link").val(value);
                     $("#image-preview").attr('src', url).show();
 
                     that.path = {
@@ -235,7 +235,7 @@
 
                         getListImages(data.ref);
 
-                        $("#node-input-link").val(data.path);
+                        $("#node-input-link").val(data.ref);
 
                         $("#upload-file").hide();
 
@@ -246,6 +246,18 @@
                     }
                 });
             }
+
+
+            function copyToClipboard() {
+                var $temp = $("<input>");
+                $("body").append($temp);
+                $temp.val($("#node-input-link").val()).select();
+                document.execCommand("copy");
+                $temp.remove();
+            }
+
+            $("#bt-copy").click(copyToClipboard);
+
         }
     });
 </script>
@@ -319,8 +331,22 @@
 
     <div class="form-row">
         <label for="node-input-link">
-            <i class="fa fa-link"></i> Link </label>
-        <input type="text" id="node-input-link">
+            <i class="fa fa-link"></i> Link
+        </label>
+
+        <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
+
+            <div style="position: absolute; left: 0px; right: 40px;">
+                <input style="width:100%" type="text" id="node-input-link" readonly>
+            </div>
+
+            <div class="btn-group" style="position: absolute; right: 0px; top: 0px;">
+                <a id="bt-copy" class="editor-button">
+                    <i class="fa fa-clipboard"></i>
+                </a>
+            </div>
+        </div>
+
     </div>
 
     <!-- List -->
