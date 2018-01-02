@@ -58,9 +58,9 @@
 
             if (that.path != undefined) {
                 getListImages(that.path.ref);
-            }
-
-            getListImages(undefined);
+            }else{
+                getListImages(undefined);
+            }           
 
             function getListImages(selected) {
 
@@ -120,12 +120,13 @@
 
                 if (value != null) {
                     var url = '/uiimage/' + value;
+                    $("#node-input-link").val(url);
+                    $("#image-preview").attr('src', url).show();
 
-                    $.get(url, function (data) {
-                        that.path = data;
-                        $("#node-input-link").val(data.path);
-                        $("#image-preview").attr('src', data.path).show();
-                    });
+                    that.path = {
+                        path: url,
+                        ref: value
+                    };
                 }
             });
 
@@ -218,8 +219,10 @@
 
                 data.append("category", category);
 
+                var link = "/uiimage/" + category + "/" + files[0].name;
+
                 $.ajax({
-                    url: '/uiimage',
+                    url: link,
                     type: 'POST',
                     data: data,
                     cache: false,
@@ -291,7 +294,9 @@
         <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
 
             <div style="position: absolute; left: 0px; right: 50px;">
-                <select style="width:100%" id="node-input-file"></select>
+                <select style="width:100%" id="node-input-file">
+                    <option></option>
+                </select>
             </div>
 
             <div class="btn-group" style="position: absolute; right: 0px; top: 0px;">
