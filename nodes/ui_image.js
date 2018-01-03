@@ -403,7 +403,7 @@ module.exports = function (RED) {
                 return;
             }
 
-            res.status(301).end();
+            res.status(200).end();
             return;
 
         });
