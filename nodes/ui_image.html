@@ -217,8 +217,6 @@
                     data.append(key, value);
                 });
 
-                data.append("category", category);
-
                 var link = "/uiimage/" + category + "/" + files[0].name;
 
                 $.ajax({
@@ -379,7 +377,7 @@
             <label>
                 <i class="fa fa-file-image-o"></i> Add file</label>
             <!-- <input type="file" id="node-input-upload" name="fileuploadfile" style="width: 63%" accept="image/*" multiple> -->
-            <input type="file" id="node-input-upload" name="fileuploadfile" style="width: 63%" accept="image/*">
+            <input type="file" id="node-input-upload" name="fileuploadfile" style="width: 63%" accept="image/*" multiple >
             <button id="bt-upload">Upload</button>
         </div>
 

@@ -146,12 +146,12 @@ module.exports = function (RED) {
 
                 let link;
 
-                if(typeof value === 'string'){
+                if (typeof value === 'string') {
                     link = "/uiimage/" + value;
-                }else{
+                } else {
                     link = "/uiimage/" + value.category + "/" + value.name;
                 }
-              
+
 
                 if (msg.init != true) {
                     defines['background-image'] = "url('" + link + "')";
@@ -211,47 +211,82 @@ module.exports = function (RED) {
 
     RED.httpAdmin.post('/uiimage/:category/:id', (req, res) => {
 
+        var error = [];
+        var success = [];
+
         var form = new formidable.IncomingForm();
+
+        form.multiples = true;
 
         form.parse(req, function (err, fields, files) {
 
+            var filesUpload = form.openedFiles.length;
             let category = req.params.category;
-            let name = req.params.id;
-            let extension = path.extname(req.params.id);
+            let name;
+            let extension;
 
-            if (extension != '.jpg' && extension != '.png' && extension != '.jpeg') {
-                res.status(400).send('incompatible file').end();
-                return;
-            }
+            for (var i = 0; i < filesUpload; i++) {
+                name = files[i].name;
+                extension = path.extname(name);
 
-            let pathBase = path.join(pathDir, category);
-            let oldpath = files[0].path;
-            let newpath = path.join(pathBase, files[0].name);
-
-            mkdirp(pathBase, (err) => {
-                if (err) {
-                    res.status(500).send(err).end();
+                if (extension != '.jpg' && extension != '.png' && extension != '.jpeg') {
+                    // res.status(400).send('incompatible file').end();
+                    error.push({
+                        cod: 400,
+                        msg: 'incompatible file'
+                    });
                     return;
                 }
 
-                fs.rename(oldpath, newpath, function (err) {
+                let pathBase = path.join(pathDir, category);
+                let oldpath = files[i].path;
+                let newpath = path.join(pathBase, files[i].name);
+
+                mkdirp(pathBase, (err) => {
                     if (err) {
-                        res.status(500).send(err).end();
+                        // res.status(500).send(err).end();
+                        error.push({
+                            cod: 500,
+                            msg: err
+                        });
                         return;
                     }
 
-                    pathExtern = path.join("/", "uiimage", category, name);
-                    reference = category + "/" + name;
+                    fs.rename(oldpath, newpath, function (err) {
+                        if (err) {
+                            // res.status(500).send(err).end();
+                            error.push({
+                                cod: 500,
+                                msg: err
+                            });
+                            return;
+                        }
 
-                    let obj = {
-                        path: pathExtern,
-                        ref: reference
-                    };
+                        pathExtern = path.join("/", "uiimage", category, name);
+                        reference = category + "/" + name;
 
-                    res.status(201).send(obj).end();
-                    return;
+                        let obj = {
+                            path: pathExtern,
+                            ref: reference
+                        };
+
+                        // res.status(201).send(obj).end();
+                        success.push(obj);
+
+                        if (i == (filesUpload - 1)) {
+                            if (error.length > 0) {
+                                error.forEach(err => {
+                                    res.status(err.cod).send(err.msg).end();
+                                });
+
+                                return;
+                            }
+
+                            res.status(201).send(success[0]).end();
+                        }
+                    });
                 });
-            });
+            }
         });
     }); //--> POST /uiimage/'category'/'id'
 
