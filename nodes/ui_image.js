@@ -205,7 +205,20 @@ module.exports = function (RED) {
     RED.nodes.registerType("ui_image", ImageNode);
 
 
-    var pathDir = path.join(RED.settings.userDir, "lib", "ui-image");
+    var pathDir = path.join(RED.settings.userDir, "lib", "ui-image", "lib");
+    var pathUpload = path.join(RED.settings.userDir, "lib", "ui-image", "upload");
+
+    mkdirp(pathDir, (err) => {
+        if (err) {
+            console.log(err);
+        }
+    });
+
+    mkdirp(pathUpload, (err) => {
+        if (err) {
+            console.log(err);
+        }
+    });
 
     ///------> API
 
@@ -218,6 +231,8 @@ module.exports = function (RED) {
 
         form.multiples = true;
 
+        form.uploadDir = pathUpload;
+
         form.parse(req, function (err, fields, files) {
 
             var filesUpload = form.openedFiles.length;
@@ -225,35 +240,57 @@ module.exports = function (RED) {
             let name;
             let extension;
 
-            for (var i = 0; i < filesUpload; i++) {
-                name = files[i].name;
-                extension = path.extname(name);
+            var pathBase = path.join(pathDir, category);
 
-                if (extension != '.jpg' && extension != '.png' && extension != '.jpeg') {
-                    // res.status(400).send('incompatible file').end();
+            var controlFiles = filesUpload;
+
+            mkdirp(pathBase, (err) => {
+                if (err) {
+                    // res.status(500).send(err).end();
                     error.push({
-                        cod: 400,
-                        msg: 'incompatible file'
+                        cod: 500,
+                        msg: err
                     });
                     return;
                 }
 
-                let pathBase = path.join(pathDir, category);
-                let oldpath = files[i].path;
-                let newpath = path.join(pathBase, files[i].name);
+                for (var i = 0; i < filesUpload; i++) {
 
-                mkdirp(pathBase, (err) => {
-                    if (err) {
-                        // res.status(500).send(err).end();
+                    name = files[i].name;
+                    extension = path.extname(name);
+
+                    if (extension != '.jpg' && extension != '.png' && extension != '.jpeg') {
+                        // res.status(400).send('incompatible file').end();
                         error.push({
-                            cod: 500,
-                            msg: err
+                            cod: 400,
+                            msg: 'incompatible file'
                         });
+
+                        controlFiles--;
+
                         return;
                     }
 
+                    if (controlFiles == 0) {
+                        if (error.length > 0) {
+                            error.forEach(err => {
+                                res.status(err.cod).send(err.msg).end();
+                            });
+
+                            return;
+                        }
+                        res.status(201).send(success[0]).end();
+                    }
+
+                    let oldpath = files[i].path;
+                    let newpath = path.join(pathBase, files[i].name);
+
                     fs.rename(oldpath, newpath, function (err) {
+
+                        controlFiles--;
+
                         if (err) {
+                            console.log("Error rename", err);
                             // res.status(500).send(err).end();
                             error.push({
                                 cod: 500,
@@ -273,7 +310,7 @@ module.exports = function (RED) {
                         // res.status(201).send(obj).end();
                         success.push(obj);
 
-                        if (i == (filesUpload - 1)) {
+                        if (controlFiles == 0) {
                             if (error.length > 0) {
                                 error.forEach(err => {
                                     res.status(err.cod).send(err.msg).end();
@@ -281,12 +318,11 @@ module.exports = function (RED) {
 
                                 return;
                             }
-
                             res.status(201).send(success[0]).end();
                         }
                     });
-                });
-            }
+                }
+            });
         });
     }); //--> POST /uiimage/'category'/'id'
 

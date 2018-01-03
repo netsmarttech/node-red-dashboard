@@ -47,6 +47,7 @@
 
             $("#upload-file").hide();
             $("#image-preview").hide();
+            $("#progress-upload").hide();
 
 
             $("#node-input-size").elementSizer({
@@ -157,6 +158,7 @@
 
             $("#bt-add-new-image").click(function () {
                 $("#upload-file").show();
+                $("#div-category").show();
                 $("#new-category").hide();
                 $("#div-file").hide();
             });
@@ -198,6 +200,8 @@
 
             function uploadFiles(event) {
 
+                $("#progress-upload").show();
+
                 if (lockUpload) {
                     return;
                 }
@@ -227,8 +231,22 @@
                     data: data,
                     cache: false,
                     processData: false, // Don't process the files
-                    contentType: false, // Set content type to false as jQuery will tell the server its a query string request
+                    contentType: false, // Set content type to false as jQuery will tell the server its a query string request,
+                    xhr: function () {
+                        var xhr = new window.XMLHttpRequest();
+                        //Upload progress
+                        xhr.upload.addEventListener("progress", function (evt) {
+                            if (evt.lengthComputable) {
+                                var percentComplete = evt.loaded / evt.total;
+                                //Do something with upload progress
+                                $("#progress-upload").val(percentComplete * 100);
+                            }
+                        }, false);
+
+                        return xhr;
+                    },
                     success: function (data, textStatus) {
+
                         $("#node-input-upload").val('');
 
                         that.path = data;
@@ -240,9 +258,17 @@
                         $("#upload-file").hide();
 
                         $("#image-preview").attr('src', data.path).show();
+                        $("#node-input-newCategory").val("");
+
+                        $("#progress-upload").val(0).hide();
+
+                        $("#upload-file").hide();
+                        $("#new-category").hide();
+                        $("#div-file").show();
+
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
-                        console.log('ERRORS: ' + errorThrown);
+                        console.log('ERRORS: ', errorThrown, textStatus, jqXHR);
                     }
                 });
             }
@@ -379,10 +405,15 @@
             <label>
                 <i class="fa fa-file-image-o"></i> Add file</label>
             <!-- <input type="file" id="node-input-upload" name="fileuploadfile" style="width: 63%" accept="image/*" multiple> -->
-            <input type="file" id="node-input-upload" name="fileuploadfile" style="width: 63%" accept="image/*" multiple >
-            <button id="bt-upload">Upload</button>
+            <input type="file" id="node-input-upload" name="fileuploadfile" style="width: 70%" accept="image/*" multiple>
         </div>
 
+        <div class="form-row">
+            <label>&nbsp;</label>
+            <button id="bt-upload">Upload</button>
+            <progress style="width: 55%" id="progress-upload" value="0" min="0" max="100"></progress>
+        </div>
+        
     </div>
     <!-- Add Image -->
 
