@@ -413,7 +413,7 @@
             <button id="bt-upload">Upload</button>
             <progress style="width: 55%" id="progress-upload" value="0" min="0" max="100"></progress>
         </div>
-        
+
     </div>
     <!-- Add Image -->
 
@@ -426,5 +426,58 @@
 </script>
 
 <script type="text/x-red" data-help-name="ui_image">
-    IMAGE
+    <p>
+        <b>ui_image</b>
+    </p>
+
+    <p>Node for use of image with
+        <code>node-red-dashboard</code>.</p>
+
+
+    <h3>Input</h3>
+    <dl class="message-properties">
+        <dt>payload
+            <span class="property-type">object | string</span>
+        </dt>
+        <dd>After image upload, is possible switch image for
+            <code>msg.payload</code>.</dd>
+        <dd>
+            Example:
+            <br>
+            <code>msg.payload: {category: "category", name: "file name"} </code> or
+            <br>
+            <code>msg.payload: category/file name</code>
+        </dd>
+    </dl>
+
+    <h3>Details</h3>
+    <dl class="message-properties">
+        <dt>Group
+            <span class="property-type">Group Dashboard</span>
+        </dt>
+        <dd>select
+            <code>node-red-dashboard</code> group.</dd>
+
+        <dt>Size
+            <span class="property-type">Image Size</span>
+        </dt>
+        <dd>defines display area of image.</dd>
+
+        <dt>Layout
+            <span class="property-type">Layout</span>
+        </dt>
+        <dd>defines image display layout.</dd>
+
+        <dt>File
+            <span class="property-type">Image</span>
+        </dt>
+        <dd>select image after upload, add new images and delete images.</dd>
+
+        <dt>Link
+            <span class="property-type">string</span>
+        </dt>
+        <dd>string use for
+            <code>injects</code> .</dd>
+
+    </dl>
 </script>
