@@ -45,7 +45,7 @@
         },
         oneditprepare: function () {
             var that = this;
-
+        
             $("#upload-file").hide();
             $("#image-preview").hide();
             $("#progress-upload").hide();
@@ -175,6 +175,7 @@
                 $("#div-category").show();
                 $("#new-category").hide();
                 $("#div-file").hide();
+                $("#image-preview").hide();
             });
 
             var setNewCategory = false;
@@ -212,7 +213,29 @@
 
             $("#bt-upload").click(uploadFiles);
 
+            function incompatibleFile() {
+
+                let incompatibleFile = false;
+
+                $.each(files, function(key, value){
+                    if(!(/\.(gif|jpg|jpeg|tiff|png)$/i).test(value.name)){
+                        incompatibleFile = true;
+                    }
+                });
+
+                return incompatibleFile;
+            }
+
             function uploadFiles(event) {
+
+                if(incompatibleFile()){
+                    //TODO -> Alerta arquivos incomplativeis
+                    RED.notify("Incompatible File", "error", false, 5000);
+                    $("#node-input-upload").val('');
+                    files = null;
+
+                    return;
+                }
 
                 $("#progress-upload").show();
 
