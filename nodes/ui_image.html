@@ -36,6 +36,7 @@
         inputs: 1,
         icon: "ui_image.png",
         paletteLabel: 'image',
+        align: 'right',
         label: function () {
             return this.name || 'image';
         },
@@ -121,7 +122,17 @@
             $("#node-input-file").change(function () {
                 var value = $('#node-input-file').val();
 
-                if (value != null) {
+                if (value == "select") {
+
+                    that.path = undefined;
+
+                    $("#node-input-link").val("");
+                    $("#image-preview").hide();
+
+                    return;
+                }
+
+                if (value != null && value != undefined) {
                     var url = '/uiimage/' + value;
                     $("#node-input-link").val(value);
                     $("#image-preview").attr('src', url).show();
@@ -130,6 +141,9 @@
                         path: url,
                         ref: value
                     };
+                } else {
+                    $("#node-input-link").val("");
+                    $("#image-preview").hide();
                 }
             });
 
@@ -333,7 +347,7 @@
 
             <div style="position: absolute; left: 0px; right: 50px;">
                 <select style="width:100%" id="node-input-file">
-                    <option></option>
+                    <option value="select">Select image...</option>
                 </select>
             </div>
 
