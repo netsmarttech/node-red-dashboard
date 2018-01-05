@@ -257,9 +257,8 @@ module.exports = function (RED) {
                 for (var i = 0; i < filesUpload; i++) {
 
                     name = files[i].name;
-                    extension = path.extname(name);
 
-                    if (extension != '.jpg' && extension != '.png' && extension != '.jpeg') {
+                    if (!(/\.(gif|jpg|jpeg|tiff|png)$/i).test(name)) {
                         // res.status(400).send('incompatible file').end();
                         error.push({
                             cod: 400,
@@ -405,6 +404,67 @@ module.exports = function (RED) {
 
         // ---->. Fim
     }); //--> GET /uiimage
+
+    RED.httpAdmin.get("/uiimage/category/", (req, res) => {
+
+        fs.readdir(pathDir, 'utf-8', (err, files) => {
+
+            var categories = [];
+            var numFiles = files.length;
+
+            if (err) {
+                res.status(500).send(err).end();
+                return;
+            }
+
+            files.forEach(file => {
+
+                var dirFile = path.join(pathDir, file);
+
+                fs.stat(dirFile, (err, stat) => {
+                    if (err) {
+                        res.status(500).send(err).end();
+                        return;
+                    }
+
+                    if (stat.isDirectory()) {
+                        categories.push(file);
+                    }
+
+                    numFiles--;
+
+                    if (numFiles === 0) {
+                        res.status(200).json(categories).end();
+                        return;
+                    }
+                });
+            });
+        });
+    }); //--> GET /uiimage/category/
+
+    RED.httpAdmin.get("/uiimage/:category/images/", (req, res) => {
+
+        let pathCategory = path.join(pathDir, req.params.category);
+
+        fs.stat(pathCategory, (err, stat) => {
+
+            if (err) {
+                res.status(500).send(err).end();
+                return;
+            }
+
+            if (stat.isDirectory()) {
+                listFilesDir(pathCategory, (err, files) => {
+                    if (err) {
+                        res.status(500).send(err).end();
+                        return;
+                    }
+
+                    res.status(200).json(files).end();
+                });
+            }
+        });
+    }); //--> GET /uiimage/:category/images/
 
     RED.httpAdmin.get("/uiimage/:category/:id", (req, res) => {
 

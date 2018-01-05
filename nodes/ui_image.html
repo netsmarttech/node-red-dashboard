@@ -27,6 +27,7 @@
             height: {
                 value: 0
             },
+            category: {},
             file: {},
             path: {},
             layout: {
@@ -44,12 +45,6 @@
             return this.name ? "node_label_italic" : "";
         },
         oneditprepare: function () {
-            var that = this;
-
-            $("#upload-file").hide();
-            $("#image-preview").hide();
-            $("#progress-upload").hide();
-
 
             $("#node-input-size").elementSizer({
                 width: "#node-input-width",
@@ -57,80 +52,130 @@
                 group: "#node-input-group"
             });
 
+            var that = this;
 
-            if (that.path != undefined) {
-                getListImages(that.path.ref);
-            } else {
-                getListImages(undefined);
-            }
+            console.log("Categories: ", that.category);
+            console.log("File: ", that.file);
 
-            function getListImages(selected) {
+            getListCategories(that.category);
 
-                $("#node-input-file").find('optgroup').remove().end();
+            $("#upload-file").hide();
+            $("#image-preview").hide();
+            $("#progress-upload").hide();
 
-                $.get('/uiimage', function (data) {
+            function getListCategories(selected) {
 
-                    var found = false;
+                $("#node-input-category").find("option").remove().end();
 
-                    data.object.forEach(function (element) {
+                $("#node-input-category").append($("<option></option>").val("select").text(""));
 
-                        var category = element.name;
-                        var numItem = element.list.length;
+                $.getJSON('/uiimage/category/', function (categories) {
 
-                        var optgroup = $('<optgroup>');
-                        optgroup.attr('label', category);
+                    categories.forEach(function (category) {
 
-                        element.list.forEach(function (item) {
+                        let option = $("<option></option>");
 
-                            var option = $("<option></option>");
-
-                            if (selected == (category + '/' + item)) {
-                                option = $("<option selected></option>");
-                                found = true;
-                            }
-
-                            option.val(category + '/' + item);
-                            option.text(item);
-
-                            optgroup.append(option);
-
-                        });
-
-                        $("#node-input-file").append(optgroup);
-
-                        if (found) {
-                            $("#node-input-link").val(that.path.ref);
-                            $("#image-preview").attr('src', that.path.path).show();
+                        if (selected == (category)) {
+                            option = $("<option selected></option>");
                         }
 
-                    });
-
-                    data.listCat.forEach(function (category) {
-
-                        var option = $("<option></option>");
                         option.val(category);
                         option.text(category);
 
                         $("#node-input-category").append(option);
+                    });
+
+                    if (selected !== undefined && selected !== null) {
+                        if (selected != "select") {
+                            getListImages(selected, that.file);
+                        }
+                    }
+                });
+            }
+
+            function getListImages(category, selected) {
+
+                $("#node-input-file").find("option").remove().end();
+
+                console.log("getImages: ", category, selected);
+
+                let link = "/uiimage/" + category + "/images/";
+
+                $.getJSON(link, function (images) {
+
+                    images.forEach(function (image) {
+
+                        let option = $("<option></option>");
+
+                        if (selected == (category + "/" + image)) {
+                            option = $("<option selected></option>");
+                        }
+
+                        option.val(category + "/" + image);
+                        option.text(image);
+
+                        $("#node-input-file").append(option);
 
                     });
 
-                });
+                    if (selected === undefined || selected === null) {
 
+                        let value = category + "/" + images[0];
+                        let url = '/uiimage/' + value;
+
+                        $("#node-input-link").val(value);
+                        $("#image-preview").attr('src', url).show();
+
+                        that.path = {
+                            path: url,
+                            ref: value
+                        };
+
+                    } else {
+
+                        let value = selected;
+                        let url = '/uiimage/' + value;
+
+                        $("#node-input-link").val(value);
+                        $("#image-preview").attr('src', url).show();
+
+                        that.path = {
+                            path: url,
+                            ref: value
+                        };
+
+                    }
+
+                });
             }
 
-            $("#node-input-file").change(function () {
-                var value = $('#node-input-file').val();
+            $("#node-input-category").change(function () {
 
-                if (value == "select") {
+                let value = $("#node-input-category").val();
 
-                    that.path = undefined;
+                console.log("Change Category: ", value);
 
+                if (value === "select") {
+                    $("#node-input-file").find("option").remove().end();
                     $("#node-input-link").val("");
-                    $("#image-preview").hide();
-
+                    that.path = {
+                        path: null,
+                        ref: null
+                    };
                     return;
                 }
+
+                if (value !== null) {
+                    getListImages(value);
+                }
+
+            });
+
+            $("#node-input-file").change(function () {
+
+                var value = $('#node-input-file').val();
+
+                console.log("Change File: ", value);
 
                 if (value != null && value != undefined) {
                     var url = '/uiimage/' + value;
@@ -147,6 +192,9 @@
                 }
             });
 
+
+
+
             $("#bt-remove-image").click(function () {
                 var value = $('#node-input-file').val();
 
@@ -160,7 +208,7 @@
                     contentType: false, // Set content type to false as jQuery will tell the server its a query string request
                     success: function (data, textStatus) {
                         that.path = null;
-                        getListImages(undefined);
+                        // getListImages(undefined);
                         $("#node-input-link").val("");
                         $("#image-preview").hide();
                     },
@@ -296,7 +344,7 @@
 
                         that.path = data;
 
-                        getListImages(data.ref);
+                        // getListImages(data.ref);
 
                         $("#node-input-link").val(data.ref);
 
@@ -318,7 +366,6 @@
                 });
             }
 
-
             function copyToClipboard() {
                 var $temp = $("<input>");
                 $("body").append($temp);
@@ -328,25 +375,31 @@
             }
 
             $("#bt-copy").click(copyToClipboard);
-
         }
     });
 </script>
 
 <script type="text/x-red" data-template-name="ui_image">
 
+    <!-- Static Layout -->
+
+    <!-- Name -->
     <div class="form-row">
         <label for="node-input-name">
             <i class="fa fa-tag"></i> Name</label>
         <input type="text" id="node-input-name">
     </div>
+    <!-- Name -->
 
+    <!-- Group -->
     <div class="form-row" id="template-row-group">
         <label for="node-input-group">
             <i class="fa fa-table"></i> Group</label>
         <input type="text" id="node-input-group">
     </div>
+    <!-- Group -->
 
+    <!-- Size -->
     <div class="form-row" id="template-row-size">
         <label>
             <i class="fa fa-object-group"></i> Size</label>
@@ -354,6 +407,7 @@
         <input type="hidden" id="node-input-height">
         <button class="editor-button" id="node-input-size"></button>
     </div>
+    <!-- Size -->
 
     <!-- Layout -->
     <div class="form-row">
@@ -369,37 +423,7 @@
     </div>
     <!-- Layout -->
 
-    <!-- List -->
-    <div id="div-file" class="form-row">
-        <label for="node-input-file">
-            <i class="fa fa-file-image-o"></i> File</label>
-
-        <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
-
-            <div style="position: absolute; left: 0px; right: 50px;">
-                <select style="width:100%" id="node-input-file">
-                    <option value="select">Select image...</option>
-                </select>
-            </div>
-
-            <div class="btn-group" style="position: absolute; right: 0px; top: 0px;">
-                <a class="editor-button" data-toggle="dropdown">
-                    <i class="fa fa-book"></i>
-                    <i class="fa fa-caret-down"></i>
-                </a>
-
-                <ul class="dropdown-menu pull-right" role="menu">
-                    <li>
-                        <a id="bt-add-new-image" tabindex="-1" href="#">Add new...</a>
-                    </li>
-                    <li>
-                        <a id="bt-remove-image" tabindex="-1" href="#">Remove image...</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
+    <!-- Link -->
     <div class="form-row">
         <label for="node-input-link">
             <i class="fa fa-link"></i> Link
@@ -417,56 +441,149 @@
                 </a>
             </div>
         </div>
-
     </div>
+    <!-- Link -->
 
-    <!-- List -->
+    <!-- Static Layout -->
 
-    <!-- Add Image -->
-    <div id="upload-file">
 
-        <div id="div-category" class="form-row">
-            <label for="node-input-category">
-                <i class="fa fa-tag"></i> Category</label>
+    <!-- Dynamic Layout -->
 
-            <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
-                <div style="position: absolute; left: 0px; right: 40px;">
-                    <select style="width:100%" id="node-input-category"></select>
-                </div>
-                <a id="bt-add-new-category" class="editor-button" style="position: absolute; right: 0px; top: 0px;">
-                    <i class="fa fa-plus"></i>
+    <!-- Category -->
+    <div id="div-category" class="form-row">
+        <label for="node-input-category">
+            <i class="fa fa-tag"></i> Category</label>
+
+        <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
+
+            <div style="position: absolute; left: 0px; right: 50px;">
+                <select style="width:100%" id="node-input-category">
+                </select>
+            </div>
+
+            <div class="btn-group" style="position: absolute; right: 0px; top: 0px;">
+
+                <a class="editor-button" data-toggle="dropdown">
+                    <i class="fa fa-book"></i>
+                    <i class="fa fa-caret-down"></i>
                 </a>
+
+                <ul class="dropdown-menu pull-right" role="menu">
+                    <li>
+                        <a id="bt-category-new" tabindex="-1" href="#">Add new...</a>
+                    </li>
+                    <li>
+                        <a id="bt-category-remove" tabindex="-1" href="#">Remove category...</a>
+                    </li>
+                </ul>
+
             </div>
 
         </div>
 
-        <div id="new-category" class="form-row">
+    </div>
+    <!-- Category -->
+
+    <!-- File -->
+    <div id="div-file" class="form-row">
+        <label for="node-input-file">
+            <i class="fa fa-file-image-o"></i> File</label>
+
+        <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
+
+            <div style="position: absolute; left: 0px; right: 50px;">
+                <select style="width:100%" id="node-input-file">
+                </select>
+            </div>
+
+            <div class="btn-group" style="position: absolute; right: 0px; top: 0px;">
+
+                <a class="editor-button" data-toggle="dropdown">
+                    <i class="fa fa-book"></i>
+                    <i class="fa fa-caret-down"></i>
+                </a>
+
+                <ul class="dropdown-menu pull-right" role="menu">
+                    <li>
+                        <a id="bt-image-new" tabindex="-1" href="#">Add new...</a>
+                    </li>
+                    <li>
+                        <a id="bt-image-remove" tabindex="-1" href="#">Remove image...</a>
+                    </li>
+                </ul>
+
+            </div>
+
+        </div>
+
+    </div>
+    <!-- File -->
+
+
+    <!-- New Category -->
+    <div id="div-new-category">
+        <div class="form-row">
             <label for="node-input-newCategory">
                 <i class="fa fa-tag"></i> New Category</label>
-            <input type="text" id="node-input-newCategory">
+
+            <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
+
+                <div style="position: absolute; left: 0px; right: 40px;">
+                    <input style="width:100%" type="text" id="node-input-newCategory">
+                </div>
+
+                <div class="btn-group" style="position: absolute; right: 0px; top: 0px;">
+                    <a id="bt-category-cancel" class="editor-button">
+                        <i class="fa fa-times"></i>
+                    </a>
+                </div>
+            </div>
         </div>
+    </div>
+    <!-- New Category -->
+
+
+
+    <!-- New Image -->
+    <div id="div-new-file">
 
         <div class="form-row">
             <label>
                 <i class="fa fa-file-image-o"></i> Add file</label>
-            <!-- <input type="file" id="node-input-upload" name="fileuploadfile" style="width: 63%" accept="image/*" multiple> -->
-            <input type="file" id="node-input-upload" name="fileuploadfile" style="width: 70%" accept="image/*" multiple>
+
+            <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
+
+                <div style="position: absolute; left: 0px; right: 40px;">
+                    <input type="file" id="node-input-upload" name="fileuploadfile" style="width: 100%" accept="image/*" multiple>
+                </div>
+
+                <div class="btn-group" style="position: absolute; right: 0px; top: 0px;">
+                    <a id="bt-image-cancel" class="editor-button">
+                        <i class="fa fa-times"></i>
+                    </a>
+                </div>
+            </div>
         </div>
+
+
 
         <div class="form-row">
             <label>&nbsp;</label>
             <button id="bt-upload">Upload</button>
             <progress style="width: 55%" id="progress-upload" value="0" min="0" max="100"></progress>
         </div>
-
     </div>
-    <!-- Add Image -->
+    <!-- New Image -->
+
+
 
     <div class="form-row">
         <div id="preview-image" align="center">
-            <img id="image-preview" style="height:auto; width:400px" src="">
+            <img id="image-preview" style="height:auto; width:95%" src="">
         </div>
     </div>
+
+    <!-- Dynamic Layout -->
 
 </script>
 
