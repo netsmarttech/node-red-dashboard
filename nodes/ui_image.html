@@ -45,7 +45,7 @@
         },
         oneditprepare: function () {
             var that = this;
-        
+
             $("#upload-file").hide();
             $("#image-preview").hide();
             $("#progress-upload").hide();
@@ -189,10 +189,11 @@
             });
 
             $("#node-input-newCategory").focusout(function () {
+
                 if (setNewCategory) {
                     let value = $("#node-input-newCategory").val();
 
-                    if (value != null && value != '') {
+                    if ((/^[A-Za-z0-9-_,\s]/).test(value)) {
                         $("#node-input-newCategory").removeClass("input-error");
                         lockUpload = false;
                         return;
@@ -203,7 +204,7 @@
                 }
             });
 
-            var files;
+            var files = null;
 
             $("#node-input-upload").on('change', prepareUpload);
 
@@ -217,8 +218,12 @@
 
                 let incompatibleFile = false;
 
-                $.each(files, function(key, value){
-                    if(!(/\.(gif|jpg|jpeg|tiff|png)$/i).test(value.name)){
+                if (files == null) {
+                    return;
+                }
+
+                $.each(files, function (key, value) {
+                    if (!(/\.(gif|jpg|jpeg|tiff|png)$/i).test(value.name)) {
                         incompatibleFile = true;
                     }
                 });
@@ -228,18 +233,20 @@
 
             function uploadFiles(event) {
 
-                if(incompatibleFile()){
-                    //TODO -> Alerta arquivos incomplativeis
+                if (incompatibleFile()) {
                     RED.notify("Incompatible File", "error", false, 5000);
                     $("#node-input-upload").val('');
                     files = null;
-
                     return;
                 }
 
-                $("#progress-upload").show();
-
                 if (lockUpload) {
+                    RED.notify("Incompatible Category", "error", false, 5000);
+                    return;
+                }
+
+                if (files == null) {
+                    RED.notify("Not Selected File for Upload", "error", false, 5000);
                     return;
                 }
 
@@ -262,20 +269,21 @@
 
                 var link = "/uiimage/" + category + "/" + files[0].name;
 
+                $("#progress-upload").show();
+
                 $.ajax({
                     url: link,
                     type: 'POST',
                     data: data,
                     cache: false,
-                    processData: false, // Don't process the files
-                    contentType: false, // Set content type to false as jQuery will tell the server its a query string request,
+                    processData: false,
+                    contentType: false,
                     xhr: function () {
                         var xhr = new window.XMLHttpRequest();
                         //Upload progress
                         xhr.upload.addEventListener("progress", function (evt) {
                             if (evt.lengthComputable) {
                                 var percentComplete = evt.loaded / evt.total;
-                                //Do something with upload progress
                                 $("#progress-upload").val(percentComplete * 100);
                             }
                         }, false);
