@@ -505,6 +505,65 @@ module.exports = function (RED) {
         });
     }); //--> DELETE /uiimage/'category'/'id'
 
+    RED.httpAdmin.delete("/uiimage/:category/", (req, res) => {
+
+        let category = req.params.category;
+
+        var categoryPath = path.join(pathDir, category);
+
+        fs.readdir(categoryPath, 'utf-8', (err, files) => {
+
+            if(err){
+                res.status(500).send(err);
+                return;
+            }
+
+            var contFiles = files.length;
+
+            if(contFiles === 0){
+
+                fs.rmdir(categoryPath, (err) => {
+                    if(err){
+                        console.log("Error: ", err);
+                        res.status(500).send(err);
+                        return;
+                    }
+
+                    res.sendStatus(200);
+
+                });                
+            }
+
+            
+            files.forEach((file) => {
+                let filePath =  path.join(categoryPath, file);
+
+                fs.unlink(filePath, (err) => {
+                    
+                    contFiles--;
+
+                    if(err){
+                        // trata erro
+                        return;
+                    }
+
+                    if(contFiles === 0){
+
+                        fs.rmdir(categoryPath, (err) => {
+                            if(err){
+                                res.status(500).send(err);
+                                return;
+                            }
+        
+                            res.sendStatus(200);
+        
+                        });                
+                    }
+                });
+            });
+        });
+    }); //--> DELETE /uiimage/'category'/'id'
+
     ///------> API
 
 

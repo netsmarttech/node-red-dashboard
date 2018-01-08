@@ -46,6 +46,32 @@
         },
         oneditprepare: function () {
 
+            const VIEW_INIT = 'view_init';
+            const VIEW_NEW_CATEGORY = 'view_new_category';
+            const VIEW_NEW_IMAGE = 'view_new_image';
+            const VIEW_DIV_FILE = 'view_div_file';
+
+            const bt_category_new = $("#bt-category-new");
+            const bt_category_cancel = $('#bt-category-cancel');
+            const bt_category_remove = $('#bt-category-remove');
+
+            const bt_image_new = $('#bt-image-new');
+            const bt_image_cancel = $('#bt-image-cancel');
+            const bt_image_remove = $('#bt-image-remove');
+
+            const div_category = $('#div-category');
+            const div_file = $('#div-file');
+            const div_new_category = $('#div-new-category');
+            const div_new_file = $('#div-new-file');
+            const image_preview = $('#image-preview');
+
+            const input_file = $('#node-input-file');
+            const input_category = $('#node-input-category');
+            const input_link = $('#node-input-link');
+
+            var setNewCategory = false;
+            var lockUpload = false;
+
             $("#node-input-size").elementSizer({
                 width: "#node-input-width",
                 height: "#node-input-height",
@@ -54,20 +80,17 @@
 
             var that = this;
 
-            console.log("Categories: ", that.category);
-            console.log("File: ", that.file);
+            viewControl(VIEW_INIT);
 
             getListCategories(that.category);
 
-            $("#upload-file").hide();
-            $("#image-preview").hide();
-            $("#progress-upload").hide();
-
             function getListCategories(selected) {
+
+                console.log("List Categories: ", selected, that.file);
 
                 $("#node-input-category").find("option").remove().end();
 
-                $("#node-input-category").append($("<option></option>").val("select").text(""));
+                $("#node-input-category").append($("<option></option>").val("not-select").text(""));
 
                 $.getJSON('/uiimage/category/', function (categories) {
 
@@ -86,7 +109,7 @@
                     });
 
                     if (selected !== undefined && selected !== null) {
-                        if (selected != "select") {
+                        if (selected != "not-select") {
                             getListImages(selected, that.file);
                         }
                     }
@@ -94,6 +117,8 @@
             }
 
             function getListImages(category, selected) {
+
+                console.log("List Images: ", that.category, that.file);
 
                 $("#node-input-file").find("option").remove().end();
 
@@ -118,46 +143,185 @@
 
                     });
 
-                    if (selected === undefined || selected === null) {
 
-                        let value = category + "/" + images[0];
-                        let url = '/uiimage/' + value;
+                    if (images.length > 0) {
+                        if (selected === undefined || selected === null) {
 
-                        $("#node-input-link").val(value);
-                        $("#image-preview").attr('src', url).show();
+                            let value = category + "/" + images[0];
+                            let url = '/uiimage/' + value;
 
-                        that.path = {
-                            path: url,
-                            ref: value
-                        };
+                            $("#node-input-link").val(value);
+                            $("#image-preview").attr('src', url).show();
 
-                    } else {
+                            that.path = {
+                                path: url,
+                                ref: value
+                            };
 
-                        let value = selected;
-                        let url = '/uiimage/' + value;
+                        } else {
 
-                        $("#node-input-link").val(value);
-                        $("#image-preview").attr('src', url).show();
+                            let value = selected;
+                            let url = '/uiimage/' + value;
 
-                        that.path = {
-                            path: url,
-                            ref: value
-                        };
+                            $("#node-input-link").val(value);
+                            $("#image-preview").attr('src', url).show();
 
+                            that.path = {
+                                path: url,
+                                ref: value
+                            };
+
+                        }
                     }
-
                 });
             }
 
-            $("#node-input-category").change(function () {
+            function viewControl(mode) {
 
-                let value = $("#node-input-category").val();
+                switch (mode) {
+
+                    case VIEW_INIT:
+                        div_file.hide();
+                        div_new_category.hide();
+                        div_new_file.hide();
+
+                        div_category.show();
+                        div_file.show();
+
+                        if (that.file !== undefined && that.file !== null) {
+                            image_preview.show();
+                        }
+
+                        break;
+
+                    case VIEW_NEW_CATEGORY:
+                        div_category.hide();
+                        div_file.hide();
+                        image_preview.hide();
+                        div_new_category.show();
+                        div_new_file.show();
+
+                        break;
+
+                    case VIEW_NEW_IMAGE:
+                        div_file.hide();
+                        image_preview.hide();
+                        div_new_file.show();
+
+                        break;
+
+                    case VIEW_DIV_FILE:
+                        div_file.show();
+
+                        break;
+
+                }
+            }
+
+            bt_category_new.click(function () {
+                viewControl(VIEW_NEW_CATEGORY);
+                setNewCategory = true;
+            });
+
+            bt_image_new.click(function () {
+                viewControl(VIEW_NEW_IMAGE);
+            });
+
+            bt_category_cancel.click(function () {
+                viewControl(VIEW_INIT);
+            });
+
+            bt_image_cancel.click(function () {
+                viewControl(VIEW_INIT);
+            });
+
+            bt_image_remove.click(function () {
+
+                var value = input_file.val();
+
+                console.log("Delete Image: ", value);
+
+                if (value == null || value == '') {
+                    RED.notify("Not selected image for remove", "error", false, 5000);
+                    return;
+                }
+
+                var newUrl = "/uiimage/" + value;
+
+                $.ajax({
+                    url: newUrl,
+                    type: 'DELETE',
+                    cache: false,
+                    processData: false, // Don't process the files
+                    contentType: false, // Set content type to false as jQuery will tell the server its a query string request
+                    success: function (data, textStatus) {
+
+                        that.path = null;
+
+                        getListCategories(undefined);
+
+                        input_file.find("option").remove().end();
+
+                        input_link.val("");
+
+                        viewControl(VIEW_INIT);
+
+                        image_preview.hide();
+
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log('ERRORS: ' + errorThrown);
+                    }
+                });
+            });
+
+            bt_category_remove.click(function () {
+
+                let value = input_category.val();
+
+                console.log("Delete Category: ", value);
+
+                if (value == null || value == 'not-select') {
+                    RED.notify("Not selected category for remove", "error", false, 5000);
+                    return;
+                }
+
+                let newUrl = "/uiimage/" + value;
+
+                $.ajax({
+                    url: newUrl,
+                    type: 'DELETE',
+                    cache: false,
+                    processData: false, // Don't process the files
+                    contentType: false, // Set content type to false as jQuery will tell the server its a query string request
+                    success: function (data, textStatus) {
+
+                        that.path = null;
+
+                        getListCategories(undefined);
+
+                        input_file.find("option").remove().end();
+
+                        input_link.val("");
+
+                        viewControl(VIEW_INIT);
+
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log('ERRORS: ' + errorThrown);
+                    }
+                });
+            });
+
+            input_category.change(function () {
+
+                let value = input_category.val();
 
                 console.log("Change Category: ", value);
 
-                if (value === "select") {
-                    $("#node-input-file").find("option").remove().end();
-                    $("#node-input-link").val("");
+                if (value === "not-select") {
+                    input_file.find("option").remove().end();
+                    input_link.val("");
                     that.path = {
                         path: null,
                         ref: null
@@ -169,71 +333,30 @@
                     getListImages(value);
                 }
 
+                viewControl(VIEW_DIV_FILE);
+
             });
 
-            $("#node-input-file").change(function () {
+            input_file.change(function () {
 
-                var value = $('#node-input-file').val();
+                var value = input_file.val();
 
                 console.log("Change File: ", value);
 
                 if (value != null && value != undefined) {
                     var url = '/uiimage/' + value;
-                    $("#node-input-link").val(value);
-                    $("#image-preview").attr('src', url).show();
+                    input_link.val(value);
+                    image_preview.attr('src', url).show();
 
                     that.path = {
                         path: url,
                         ref: value
                     };
+
                 } else {
-                    $("#node-input-link").val("");
-                    $("#image-preview").hide();
+                    input_link.val("");
+                    image_preview.hide();
                 }
-            });
-
-
-
-
-            $("#bt-remove-image").click(function () {
-                var value = $('#node-input-file').val();
-
-                var newUrl = "/uiimage/" + value;
-
-                $.ajax({
-                    url: newUrl,
-                    type: 'DELETE',
-                    cache: false,
-                    processData: false, // Don't process the files
-                    contentType: false, // Set content type to false as jQuery will tell the server its a query string request
-                    success: function (data, textStatus) {
-                        that.path = null;
-                        // getListImages(undefined);
-                        $("#node-input-link").val("");
-                        $("#image-preview").hide();
-                    },
-                    error: function (jqXHR, textStatus, errorThrown) {
-                        console.log('ERRORS: ' + errorThrown);
-                    }
-                });
-            });
-
-            $("#bt-add-new-image").click(function () {
-                $("#upload-file").show();
-                $("#div-category").show();
-                $("#new-category").hide();
-                $("#div-file").hide();
-                $("#image-preview").hide();
-            });
-
-            var setNewCategory = false;
-            var lockUpload = false;
-
-            $("#bt-add-new-category").click(function () {
-                $("#new-category").show();
-                $("#div-category").hide();
-
-                setNewCategory = true;
             });
 
             $("#node-input-newCategory").focusout(function () {
@@ -279,7 +402,29 @@
                 return incompatibleFile;
             }
 
+            function checkCategory() {
+
+                let category = input_category.val();
+                let newCategory = $("#node-input-newCategory").val();
+
+                $("#node-input-newCategory").focusout();
+
+                if (setNewCategory) {
+                    category = newCategory;
+                }
+
+                if (category == 'not-select' || category == '') {
+                    return null;
+                }
+
+                console.log("Category: ", category);
+
+                return category;
+            }
+
             function uploadFiles(event) {
+
+                let category = checkCategory();
 
                 if (incompatibleFile()) {
                     RED.notify("Incompatible File", "error", false, 5000);
@@ -288,7 +433,10 @@
                     return;
                 }
 
-                if (lockUpload) {
+                if (lockUpload || category == null) {
+
+                    console.log("Incompatible Category - lockUpload: ", lockUpload, category);
+
                     RED.notify("Incompatible Category", "error", false, 5000);
                     return;
                 }
@@ -298,12 +446,7 @@
                     return;
                 }
 
-                let category = $("#node-input-category").val();
-                let newCategory = $("#node-input-newCategory").val();
-
-                if (setNewCategory) {
-                    category = newCategory;
-                }
+                console.log("Upload Proccess");
 
                 event.stopPropagation(); // Stop stuff happening
                 event.preventDefault(); // Totally stop stuff happening
@@ -341,24 +484,20 @@
                     success: function (data, textStatus) {
 
                         $("#node-input-upload").val('');
+                        $("#progress-upload").val(0);
+                        $("#node-input-newCategory").val("");
 
                         that.path = data;
 
-                        // getListImages(data.ref);
+                        let category = data.ref.split('/');
 
-                        $("#node-input-link").val(data.ref);
+                        getListCategories(category[0]);
 
-                        $("#upload-file").hide();
+                        input_link.val(data.ref);
 
-                        $("#image-preview").attr('src', data.path).show();
-                        $("#node-input-newCategory").val("");
+                        input_file.val(data.ref);
 
-                        $("#progress-upload").val(0).hide();
-
-                        $("#upload-file").hide();
-                        $("#new-category").hide();
-                        $("#div-file").show();
-
+                        viewControl(VIEW_INIT);
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
                         console.log('ERRORS: ', errorThrown, textStatus, jqXHR);
