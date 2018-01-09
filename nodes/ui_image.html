@@ -202,9 +202,10 @@
 
                         div_category.show();
 
-                        div_file.show();
+                        div_file.hide();
 
                         if (that.file !== undefined && that.file !== null) {
+                            div_file.show();
                             image_preview.show();
                         } else {
                             input_file.prop('disebled', true);
@@ -345,6 +346,7 @@
                 if (value === "not-select") {
                     input_file.find('option').remove().end();
                     input_link.val("");
+                    image_preview.hide();
                     div_file.hide();
                     that.path = {
                         path: null,
@@ -353,7 +355,7 @@
                     return;
                 }
 
-                
+
                 if (value !== null) {
                     div_file.show();
                     getListImages(value);
@@ -387,7 +389,9 @@
                 if (setNewCategory) {
                     let value = input_new_category.val();
 
-                    if ((/^[A-Za-z0-9-_,\s]/).test(value)) {
+                    if ((
+                            /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-\ ]*[a-zA-Z0-9]))*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-\ ]*[A-Za-z0-9])$/
+                        ).test(value)) {
                         input_new_category.removeClass("input-error");
                         lockUpload = false;
                         return;
@@ -420,10 +424,17 @@
                 }
 
                 if (category == 'not-select' || category == '') {
+                    console.log("Error - Category: ", category);
                     return null;
                 }
 
                 if (lockUpload) {
+                    console.log("Error - Category lockUpload ");
+                    return null;
+                }
+
+                if (category == null) {
+                    console.log("Error - Category: ", category);
                     return null;
                 }
 
@@ -537,7 +548,7 @@
 
                     // console.log("Incompatible Category - lockUpload: ", lockUpload, category);
 
-                    RED.notify("Incompatible Category", "error", false, 5000);
+                    RED.notify("Invalid category", "error", false, 5000);
                     return;
                 }
 
@@ -587,9 +598,9 @@
 
                         input_link.val(data.ref);
 
-                        input_file.val(data.ref);
+                        // input_file.val(data.ref);
 
-                        that.file = data.ref;
+                        // that.file = data.ref;
 
                         $("#node-input-upload").val('');
 
@@ -597,7 +608,7 @@
 
                         let category = data.ref.split('/');
 
-                        getListCategories(category[0]);
+                        getListImages(category[0], data.ref);
 
                         bar_progress.val(0).hide();
 
@@ -810,7 +821,7 @@
 
                 <div class="btn-group" style="position: absolute; right: 35px; top: 0px;">
                     <a id="bt-upload" class="editor-button">
-                        <i class="fa fa-check"></i>
+                        <i class="fa fa-upload"></i>
                     </a>
                 </div>
 
