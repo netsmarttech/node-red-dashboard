@@ -74,7 +74,6 @@ module.exports = function (RED) {
             defines = {
                 'width': '100%',
                 'height': '100%',
-                'background-size': '100%',
                 'background-position': 'center',
                 'background-repeat': 'no-repeat',
                 'background-image': "url('" + config.path.path + "')"
@@ -325,6 +324,31 @@ module.exports = function (RED) {
         });
     }); //--> POST /uiimage/'category'/'id'
 
+    RED.httpAdmin.post('/uiimage/category/', (req, res) => {
+
+        var form = new formidable.IncomingForm();
+
+        form.multiples = true;
+
+        form.uploadDir = pathUpload;
+
+        form.parse(req, function (err, fields, files) {
+
+            let category = fields.category;
+
+            var pathBase = path.join(pathDir, category);
+
+            mkdirp(pathBase, (err) => {
+                if (err) {
+                    res.status(500).send(err);
+                    return;
+                }
+
+                res.status(201).send({'category': category});
+            });
+        });
+    }); //--> POST /uiimage/category/
+
     RED.httpAdmin.get("/uiimage", (req, res) => {
 
         fs.readdir(pathDir, 'utf-8', (err, files) => {
@@ -531,15 +555,15 @@ module.exports = function (RED) {
 
                     res.sendStatus(200);
 
-                });                
+                });
             }
 
-            
+
             files.forEach((file) => {
                 let filePath =  path.join(categoryPath, file);
 
                 fs.unlink(filePath, (err) => {
-                    
+
                     contFiles--;
 
                     if(err){
@@ -554,10 +578,10 @@ module.exports = function (RED) {
                                 res.status(500).send(err);
                                 return;
                             }
-        
+
                             res.sendStatus(200);
-        
-                        });                
+
+                        });
                     }
                 });
             });

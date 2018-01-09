@@ -54,20 +54,24 @@
             const bt_category_new = $("#bt-category-new");
             const bt_category_cancel = $('#bt-category-cancel');
             const bt_category_remove = $('#bt-category-remove');
+            const bt_category_save = $('#bt-category-save');
 
             const bt_image_new = $('#bt-image-new');
             const bt_image_cancel = $('#bt-image-cancel');
             const bt_image_remove = $('#bt-image-remove');
+            const bt_image_options = $('#bt-image-options');
 
             const div_category = $('#div-category');
             const div_file = $('#div-file');
             const div_new_category = $('#div-new-category');
             const div_new_file = $('#div-new-file');
             const image_preview = $('#image-preview');
+            const bar_progress = $("#progress-upload");
 
             const input_file = $('#node-input-file');
             const input_category = $('#node-input-category');
             const input_link = $('#node-input-link');
+            const input_new_category = $("#node-input-newCategory");
 
             var setNewCategory = false;
             var lockUpload = false;
@@ -84,9 +88,11 @@
 
             getListCategories(that.category);
 
+            input_category.val(that.category);
+
             function getListCategories(selected) {
 
-                console.log("List Categories: ", selected, that.file);
+                // console.log("List Categories: ", selected, that.file);
 
                 $("#node-input-category").find("option").remove().end();
 
@@ -111,6 +117,7 @@
                     if (selected !== undefined && selected !== null) {
                         if (selected != "not-select") {
                             getListImages(selected, that.file);
+                            div_file.show();
                         }
                     }
                 });
@@ -118,11 +125,11 @@
 
             function getListImages(category, selected) {
 
-                console.log("List Images: ", that.category, that.file);
+                // console.log("List Images: ", that.category, that.file);
 
                 $("#node-input-file").find("option").remove().end();
 
-                console.log("getImages: ", category, selected);
+                // console.log("List Images: ", category, selected);
 
                 let link = "/uiimage/" + category + "/images/";
 
@@ -153,6 +160,8 @@
                             $("#node-input-link").val(value);
                             $("#image-preview").attr('src', url).show();
 
+                            this.file = value;
+
                             that.path = {
                                 path: url,
                                 ref: value
@@ -166,12 +175,17 @@
                             $("#node-input-link").val(value);
                             $("#image-preview").attr('src', url).show();
 
+                            this.file = value;
+
                             that.path = {
                                 path: url,
                                 ref: value
                             };
 
                         }
+                    } else {
+                        input_link.val('');
+                        image_preview.hide();
                     }
                 });
             }
@@ -181,26 +195,29 @@
                 switch (mode) {
 
                     case VIEW_INIT:
-                        div_file.hide();
+
                         div_new_category.hide();
                         div_new_file.hide();
+                        bar_progress.hide();
 
                         div_category.show();
+
                         div_file.show();
 
                         if (that.file !== undefined && that.file !== null) {
                             image_preview.show();
+                        } else {
+                            input_file.prop('disebled', true);
                         }
 
                         break;
 
                     case VIEW_NEW_CATEGORY:
-                        div_category.hide();
-                        div_file.hide();
                         image_preview.hide();
+                        div_new_file.hide();
+                        div_file.hide();
+                        div_category.hide();
                         div_new_category.show();
-                        div_new_file.show();
-
                         break;
 
                     case VIEW_NEW_IMAGE:
@@ -220,6 +237,7 @@
 
             bt_category_new.click(function () {
                 viewControl(VIEW_NEW_CATEGORY);
+                input_link.val('');
                 setNewCategory = true;
             });
 
@@ -239,7 +257,7 @@
 
                 var value = input_file.val();
 
-                console.log("Delete Image: ", value);
+                // console.log("Delete Image: ", value);
 
                 if (value == null || value == '') {
                     RED.notify("Not selected image for remove", "error", false, 5000);
@@ -279,7 +297,7 @@
 
                 let value = input_category.val();
 
-                console.log("Delete Category: ", value);
+                // console.log("Delete Category: ", value);
 
                 if (value == null || value == 'not-select') {
                     RED.notify("Not selected category for remove", "error", false, 5000);
@@ -306,6 +324,9 @@
 
                         viewControl(VIEW_INIT);
 
+                        div_file.hide();
+                        image_preview.hide();
+
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
                         console.log('ERRORS: ' + errorThrown);
@@ -313,15 +334,18 @@
                 });
             });
 
-            input_category.change(function () {
+            input_category.change(changeCategory);
+
+            function changeCategory() {
 
                 let value = input_category.val();
 
-                console.log("Change Category: ", value);
+                // console.log("Change Category: ", value, input_category.val());
 
                 if (value === "not-select") {
-                    input_file.find("option").remove().end();
+                    input_file.find('option').remove().end();
                     input_link.val("");
+                    div_file.hide();
                     that.path = {
                         path: null,
                         ref: null
@@ -329,19 +353,18 @@
                     return;
                 }
 
+                
                 if (value !== null) {
+                    div_file.show();
                     getListImages(value);
                 }
-
-                viewControl(VIEW_DIV_FILE);
-
-            });
+            }
 
             input_file.change(function () {
 
                 var value = input_file.val();
 
-                console.log("Change File: ", value);
+                // console.log("Change File: ", value);
 
                 if (value != null && value != undefined) {
                     var url = '/uiimage/' + value;
@@ -359,21 +382,118 @@
                 }
             });
 
-            $("#node-input-newCategory").focusout(function () {
+            input_new_category.focusout(function () {
 
                 if (setNewCategory) {
-                    let value = $("#node-input-newCategory").val();
+                    let value = input_new_category.val();
 
                     if ((/^[A-Za-z0-9-_,\s]/).test(value)) {
-                        $("#node-input-newCategory").removeClass("input-error");
+                        input_new_category.removeClass("input-error");
                         lockUpload = false;
                         return;
                     }
 
-                    $("#node-input-newCategory").addClass("input-error");
+                    input_new_category.addClass("input-error");
                     lockUpload = true;
                 }
             });
+
+            input_new_category.keypress(function (e) {
+                if (e.which === 13) {
+                    saveCategory();
+                }
+            });
+
+            bt_category_save.click(function () {
+                saveCategory();
+            });
+
+            function checkCategory() {
+
+                let category = input_category.val();
+                let newCategory = input_new_category.val();
+
+                input_new_category.focusout();
+
+                if (setNewCategory) {
+                    category = newCategory;
+                }
+
+                if (category == 'not-select' || category == '') {
+                    return null;
+                }
+
+                if (lockUpload) {
+                    return null;
+                }
+
+
+                category = category.trim();
+
+                // console.log("Category: ", category);
+
+                return category;
+            }
+
+            function saveCategory() {
+
+                let value = checkCategory();
+
+                if (value === null) {
+                    RED.notify("Invalid category", "error", false, 5000);
+                    return;
+                }
+
+                var data = new FormData();
+
+                data.append('category', value);
+
+                var link = "/uiimage/category/";
+
+                bar_progress.show();
+
+                $.ajax({
+                    url: link,
+                    type: 'POST',
+                    data: data,
+                    cache: false,
+                    processData: false,
+                    contentType: false,
+                    xhr: function () {
+                        var xhr = new window.XMLHttpRequest();
+                        //Upload progress
+                        xhr.upload.addEventListener("progress", function (evt) {
+                            if (evt.lengthComputable) {
+                                var percentComplete = evt.loaded / evt.total;
+                                bar_progress.val(percentComplete * 100);
+                            }
+                        }, false);
+
+                        return xhr;
+                    },
+                    success: function (data, textStatus) {
+                        input_new_category.val('');
+
+                        getListCategories(data.category);
+
+                        div_new_category.hide();
+                        bar_progress.val(0).hide();
+                        div_category.show();
+
+                        input_category.val(data.category);
+
+                        that.category = data.category;
+
+                        setNewCategory = false;
+
+                        // changeCategory();
+
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log('ERRORS: ', errorThrown, textStatus, jqXHR);
+                    }
+                });
+            }
 
             var files = null;
 
@@ -402,26 +522,6 @@
                 return incompatibleFile;
             }
 
-            function checkCategory() {
-
-                let category = input_category.val();
-                let newCategory = $("#node-input-newCategory").val();
-
-                $("#node-input-newCategory").focusout();
-
-                if (setNewCategory) {
-                    category = newCategory;
-                }
-
-                if (category == 'not-select' || category == '') {
-                    return null;
-                }
-
-                console.log("Category: ", category);
-
-                return category;
-            }
-
             function uploadFiles(event) {
 
                 let category = checkCategory();
@@ -435,7 +535,7 @@
 
                 if (lockUpload || category == null) {
 
-                    console.log("Incompatible Category - lockUpload: ", lockUpload, category);
+                    // console.log("Incompatible Category - lockUpload: ", lockUpload, category);
 
                     RED.notify("Incompatible Category", "error", false, 5000);
                     return;
@@ -446,7 +546,7 @@
                     return;
                 }
 
-                console.log("Upload Proccess");
+                // console.log("Upload Proccess");
 
                 event.stopPropagation(); // Stop stuff happening
                 event.preventDefault(); // Totally stop stuff happening
@@ -460,7 +560,7 @@
 
                 var link = "/uiimage/" + category + "/" + files[0].name;
 
-                $("#progress-upload").show();
+                bar_progress.show();
 
                 $.ajax({
                     url: link,
@@ -475,7 +575,7 @@
                         xhr.upload.addEventListener("progress", function (evt) {
                             if (evt.lengthComputable) {
                                 var percentComplete = evt.loaded / evt.total;
-                                $("#progress-upload").val(percentComplete * 100);
+                                bar_progress.val(percentComplete * 100);
                             }
                         }, false);
 
@@ -483,21 +583,26 @@
                     },
                     success: function (data, textStatus) {
 
-                        $("#node-input-upload").val('');
-                        $("#progress-upload").val(0);
-                        $("#node-input-newCategory").val("");
-
                         that.path = data;
-
-                        let category = data.ref.split('/');
-
-                        getListCategories(category[0]);
 
                         input_link.val(data.ref);
 
                         input_file.val(data.ref);
 
+                        that.file = data.ref;
+
+                        $("#node-input-upload").val('');
+
+                        input_new_category.val("");
+
+                        let category = data.ref.split('/');
+
+                        getListCategories(category[0]);
+
+                        bar_progress.val(0).hide();
+
                         viewControl(VIEW_INIT);
+
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
                         console.log('ERRORS: ', errorThrown, textStatus, jqXHR);
@@ -637,7 +742,7 @@
 
             <div class="btn-group" style="position: absolute; right: 0px; top: 0px;">
 
-                <a class="editor-button" data-toggle="dropdown">
+                <a id="bt-image-options" class="editor-button" data-toggle="dropdown">
                     <i class="fa fa-book"></i>
                     <i class="fa fa-caret-down"></i>
                 </a>
@@ -663,12 +768,18 @@
     <div id="div-new-category">
         <div class="form-row">
             <label for="node-input-newCategory">
-                <i class="fa fa-tag"></i> New Category</label>
+                <i class="fa fa-tag"></i> Category</label>
 
             <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
 
-                <div style="position: absolute; left: 0px; right: 40px;">
+                <div style="position: absolute; left: 0px; right: 75px;">
                     <input style="width:100%" type="text" id="node-input-newCategory">
+                </div>
+
+                <div class="btn-group" style="position: absolute; right: 35px; top: 0px;">
+                    <a id="bt-category-save" class="editor-button">
+                        <i class="fa fa-check"></i>
+                    </a>
                 </div>
 
                 <div class="btn-group" style="position: absolute; right: 0px; top: 0px;">
@@ -676,6 +787,7 @@
                         <i class="fa fa-times"></i>
                     </a>
                 </div>
+
             </div>
         </div>
     </div>
@@ -692,8 +804,14 @@
 
             <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
 
-                <div style="position: absolute; left: 0px; right: 40px;">
+                <div style="position: absolute; left: 0px; right: 75px;">
                     <input type="file" id="node-input-upload" name="fileuploadfile" style="width: 100%" accept="image/*" multiple>
+                </div>
+
+                <div class="btn-group" style="position: absolute; right: 35px; top: 0px;">
+                    <a id="bt-upload" class="editor-button">
+                        <i class="fa fa-check"></i>
+                    </a>
                 </div>
 
                 <div class="btn-group" style="position: absolute; right: 0px; top: 0px;">
@@ -701,18 +819,16 @@
                         <i class="fa fa-times"></i>
                     </a>
                 </div>
+
             </div>
         </div>
 
-
-
-        <div class="form-row">
-            <label>&nbsp;</label>
-            <button id="bt-upload">Upload</button>
-            <progress style="width: 55%" id="progress-upload" value="0" min="0" max="100"></progress>
-        </div>
     </div>
     <!-- New Image -->
+
+    <div class="form-row">
+        <progress style="width: 95%; height: 5px" id="progress-upload" value="0" min="0" max="100"></progress>
+    </div>
 
 
 
