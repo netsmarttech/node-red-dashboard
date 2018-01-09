@@ -144,13 +144,16 @@ module.exports = function (RED) {
                 // console.log("Chamou dentro beforeEmit - MSG: ", msg, " - value: ", value);
 
                 let link;
-
+       
                 if (typeof value === 'string') {
                     link = "/uiimage/" + value;
                 } else {
                     link = "/uiimage/" + value.category + "/" + value.name;
                 }
 
+                if(value.url !== undefined){
+                    link = msg.payload.url;
+                }
 
                 if (msg.init != true) {
                     defines['background-image'] = "url('" + link + "')";
