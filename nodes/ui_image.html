@@ -671,7 +671,7 @@
         <p>
             <strong>Warning:</strong> When deleting the category, all images will also be deleted.</p>
     </div>
-    
+
     <!-- Static Layout -->
 
     <!-- Name -->
@@ -912,6 +912,30 @@
             <br>
             <code>msg.payload: category/file name</code>
         </dd>
+
+        <dt>src
+            <span class="property-type">string</span>
+        </dt>
+        <dd>Is possible switch image by
+            <code>msg.src</code>, using a link http.</dd>
+        <dd>
+            Example:
+            <br>
+            <code>msg.src: "https://http.cat/200.jpg"</code>
+        </dd>
+
+        <dt>layout
+            <span class="property-type">string</span>
+        </dt>
+        <dd>Is possible switch layout of image by
+            <code>msg.layout</code>.</dd>
+        <dd>
+            Options:
+            <br>
+            <code>msg.layout:</code><code>adjust</code>, <code>center</code>, <code>side</code> or <code>expand</code>.
+        </dd>
+
+
     </dl>
 
     <h3>Details</h3>

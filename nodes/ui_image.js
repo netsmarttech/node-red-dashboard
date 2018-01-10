@@ -11,6 +11,8 @@ module.exports = function (RED) {
 
         var currentImage = null;
 
+        var processImage = null;
+
         var hei = Number(config.height || 0);
 
         var image;
@@ -36,100 +38,100 @@ module.exports = function (RED) {
 
         var previousTemplate = null;
 
-        //--> Lado a Lado - background-repeat: repeat
-        //--> Ajustar (Centralizar imagem Inteira) - background-position: center
-        //--> Centralizar (centro da imagem) - background-size: 100%; + background-position: center;
-        //--> Ampliar (estica a imagem) - size = cover
-
         image = "<div ng-style=\"msg.image\"></div>";
 
-        if (config.layout === 'adjust') {
-
-            // console.log("--> adjust");
+        function defineLayout(layout) {
 
             defines = {};
 
-            defines = {
-                'width': '100%',
-                'height': '100%',
-                'background-size': 'contain',
-                'background-position': 'center',
-                'background-repeat': 'no-repeat',
-                'background-image': "url('" + config.path.path + "')"
-            };
+            switch (layout) {
+
+                case 'adjust':
+
+                    // console.log("--> adjust");
+
+                    defines = {
+                        'width': '100%',
+                        'height': '100%',
+                        'background-size': 'contain',
+                        'background-position': 'center',
+                        'background-repeat': 'no-repeat',
+                        'background-image': "url('" + config.path.path + "')"
+                    };
+
+                    break;
+
+                case 'center':
+
+                    // console.log("--> center");
+
+                    defines = {
+                        'width': '100%',
+                        'height': '100%',
+                        'background-position': 'center',
+                        'background-repeat': 'no-repeat',
+                        'background-image': "url('" + config.path.path + "')"
+                    };
+
+                    break;
+
+                case 'expand':
+
+                    // console.log("--> expand");
+
+                    defines = {
+                        'width': '100%',
+                        'height': '100%',
+                        'background-size': 'cover',
+                        'background-position': 'center',
+                        'background-repeat': 'no-repeat',
+                        'background-image': "url('" + config.path.path + "')"
+                    };
+
+                    break;
+
+                case 'side':
+
+                    // console.log("--> side"); 
+
+                    defines = {
+                        'width': '100%',
+                        'height': '100%',
+                        'background-repeat': 'repeat',
+                        'background-image': "url('" + config.path.path + "')"
+                    };
+
+                    break;
+
+                default:
+
+                    defines = {
+                        'width': '100%',
+                        'height': '100%',
+                        'background-size': 'contain',
+                        'background-position': 'center',
+                        'background-repeat': 'no-repeat',
+                        'background-image': "url('" + config.path.path + "')"
+                    };
+
+                    node.warn("Invalid Layout - " + layout);
+
+                    break;
+
+            }
 
             if (currentImage != null) {
                 node.emit('input', {
                     payload: null
                 });
             }
-        }
-
-        if (config.layout === 'center') {
-
-            // console.log("--> center");
-
-            defines = {};
-
-            defines = {
-                'width': '100%',
-                'height': '100%',
-                'background-position': 'center',
-                'background-repeat': 'no-repeat',
-                'background-image': "url('" + config.path.path + "')"
-            };
-
-            if (currentImage != null) {
-                node.emit('input', {
-                    payload: null
-                });
-            }
-        }
-
-        if (config.layout === 'expand') {
-
-            // console.log("--> expand");            
-
-            defines = {};
-
-            defines = {
-                'width': '100%',
-                'height': '100%',
-                'background-size': 'cover',
-                'background-position': 'center',
-                'background-repeat': 'no-repeat',
-                'background-image': "url('" + config.path.path + "')"
-            };
-
-            if (currentImage != null) {
-                node.emit('input', {
-                    payload: null
-                });
-            }
-        }
-
-        if (config.layout === 'side') {
-
-            // console.log("--> side"); 
-
-            defines = {};
-
-            defines = {
-                'width': '100%',
-                'height': '100%',
-                'background-repeat': 'repeat',
-                'background-image': "url('" + config.path.path + "')"
-            };
-
-            if (currentImage != null) {
-                node.emit('input', {
-                    payload: null
-                });
-            }
 
         }
+
+        defineLayout(config.layout);
 
         var done = ui.add({
+            emitOnlyNewValues: false,
             node: node,
             tab: tab,
             group: group,
@@ -144,15 +146,39 @@ module.exports = function (RED) {
                 // console.log("Chamou dentro beforeEmit - MSG: ", msg, " - value: ", value);
 
                 let link;
-       
-                if (typeof value === 'string') {
-                    link = "/uiimage/" + value;
-                } else {
-                    link = "/uiimage/" + value.category + "/" + value.name;
+
+                // console.log("Inicio processImage: ", processImage);
+
+                if(msg.payload !== undefined || msg.url !== undefined){
+
+                    // console.log("Change Image: ", msg.payload, msg.url);
+
+                    if (typeof value === 'string') {
+                        link = "/uiimage/" + value;
+                    } else {
+                        link = "/uiimage/" + value.category + "/" + value.name;
+                    }
+    
+                    if (msg.url !== undefined) {
+                        // console.log("SetImage:", msg.url);
+                        link = msg.url;
+                    }
+
+                    processImage = link;
+
+                    if(msg.initialImage !== undefined){
+                        processImage = msg.initialImage;
+                    }                  
+
+                    // console.log("processImage: ", processImage);
+
+                }else{
+                    link = processImage;
                 }
 
-                if(value.url !== undefined){
-                    link = msg.payload.url;
+                if (msg.layout !== undefined) {
+                    // console.log("SetLayout:", msg.layout);
+                    defineLayout(msg.layout);
                 }
 
                 if (msg.init != true) {
@@ -199,7 +225,8 @@ module.exports = function (RED) {
 
         node.emit('input', {
             init: true,
-            payload: defines
+            payload: defines,
+            initialImage: config.path.path
         });
 
         node.on("close", done);
@@ -347,7 +374,9 @@ module.exports = function (RED) {
                     return;
                 }
 
-                res.status(201).send({'category': category});
+                res.status(201).send({
+                    'category': category
+                });
             });
         });
     }); //--> POST /uiimage/category/
@@ -540,17 +569,17 @@ module.exports = function (RED) {
 
         fs.readdir(categoryPath, 'utf-8', (err, files) => {
 
-            if(err){
+            if (err) {
                 res.status(500).send(err);
                 return;
             }
 
             var contFiles = files.length;
 
-            if(contFiles === 0){
+            if (contFiles === 0) {
 
                 fs.rmdir(categoryPath, (err) => {
-                    if(err){
+                    if (err) {
                         console.log("Error: ", err);
                         res.status(500).send(err);
                         return;
@@ -563,21 +592,21 @@ module.exports = function (RED) {
 
 
             files.forEach((file) => {
-                let filePath =  path.join(categoryPath, file);
+                let filePath = path.join(categoryPath, file);
 
                 fs.unlink(filePath, (err) => {
 
                     contFiles--;
 
-                    if(err){
+                    if (err) {
                         // trata erro
                         return;
                     }
 
-                    if(contFiles === 0){
+                    if (contFiles === 0) {
 
                         fs.rmdir(categoryPath, (err) => {
-                            if(err){
+                            if (err) {
                                 res.status(500).send(err);
                                 return;
                             }
