@@ -295,8 +295,12 @@
             });
 
             bt_category_remove.click(function () {
+                $("#node-dialog-confirm-remove").dialog("open");
+            });
 
-                let value = input_category.val();
+            function removeCategory() {
+
+                let value = $('#node-input-category').val();
 
                 // console.log("Delete Category: ", value);
 
@@ -333,7 +337,7 @@
                         console.log('ERRORS: ' + errorThrown);
                     }
                 });
-            });
+            };
 
             input_category.change(changeCategory);
 
@@ -630,12 +634,44 @@
             }
 
             $("#bt-copy").click(copyToClipboard);
+
+            $("#node-dialog-confirm-remove").dialog({
+                title: "Remove category",
+                autoOpen: false,
+                width: 550,
+                height: "auto",
+                buttons: [{
+                        id: "bt-confirm-remove",
+                        text: "Remove",
+                        class: "primary",
+
+                        click: function () {
+                            removeCategory();
+                            $(this).dialog("close");
+                        }
+                    },
+                    {
+                        id: "bt-cancel-remove",
+                        text: "Cancel",
+                        class: "primary",
+
+                        click: function () {
+                            $(this).dialog("close");
+                        }
+                    }
+                ]
+            });
         }
     });
 </script>
 
 <script type="text/x-red" data-template-name="ui_image">
 
+    <div class="hide " id="node-dialog-confirm-remove">
+        <p>
+            <strong>Warning:</strong> When deleting the category, all images will also be deleted.</p>
+    </div>
+    
     <!-- Static Layout -->
 
     <!-- Name -->
