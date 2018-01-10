@@ -247,11 +247,29 @@
             });
 
             bt_category_cancel.click(function () {
+
                 viewControl(VIEW_INIT);
+
+                let category = input_category.val();
+
+                getListCategories(category);
+
+                setNewCategory = false;
+
+                if (category !== null && category !== 'not-select') {
+                    div_file.show();
+                    image_preview.show();
+                } else {
+                    div_file.hide();
+                    image_preview.hide();
+                }
+
             });
 
             bt_image_cancel.click(function () {
                 viewControl(VIEW_INIT);
+                div_file.show();
+                image_preview.show();
             });
 
             bt_image_remove.click(function () {
@@ -277,13 +295,17 @@
 
                         that.path = null;
 
-                        getListCategories(undefined);
+                        let category = input_category.val();
+
+                        getListCategories(category);
 
                         input_file.find("option").remove().end();
 
                         input_link.val("");
 
                         viewControl(VIEW_INIT);
+
+                        div_file.show();
 
                         image_preview.hide();
 
@@ -295,6 +317,14 @@
             });
 
             bt_category_remove.click(function () {
+
+                let value = $('#node-input-category').val();
+
+                if (value == null || value == 'not-select') {
+                    RED.notify("Not selected category for remove", "error", false, 5000);
+                    return;
+                }
+
                 $("#node-dialog-confirm-remove").dialog("open");
             });
 
@@ -303,11 +333,6 @@
                 let value = $('#node-input-category').val();
 
                 // console.log("Delete Category: ", value);
-
-                if (value == null || value == 'not-select') {
-                    RED.notify("Not selected category for remove", "error", false, 5000);
-                    return;
-                }
 
                 let newUrl = "/uiimage/" + value;
 
@@ -428,20 +453,19 @@
                 }
 
                 if (category == 'not-select' || category == '') {
-                    console.log("Error - Category: ", category);
+                    // console.log("Error - Category: ", category);
                     return null;
                 }
 
                 if (lockUpload) {
-                    console.log("Error - Category lockUpload ");
+                    // console.log("Error - Category lockUpload ");
                     return null;
                 }
 
                 if (category == null) {
-                    console.log("Error - Category: ", category);
+                    // console.log("Error - Category: ", category);
                     return null;
                 }
-
 
                 category = category.trim();
 
@@ -602,10 +626,6 @@
 
                         input_link.val(data.ref);
 
-                        // input_file.val(data.ref);
-
-                        // that.file = data.ref;
-
                         $("#node-input-upload").val('');
 
                         input_new_category.val("");
@@ -617,6 +637,8 @@
                         bar_progress.val(0).hide();
 
                         viewControl(VIEW_INIT);
+
+                        div_file.show();
 
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
@@ -661,6 +683,7 @@
                     }
                 ]
             });
+
         }
     });
 </script>
@@ -932,7 +955,11 @@
         <dd>
             Options:
             <br>
-            <code>msg.layout:</code><code>adjust</code>, <code>center</code>, <code>side</code> or <code>expand</code>.
+            <code>msg.layout:</code>
+            <code>adjust</code>,
+            <code>center</code>,
+            <code>side</code> or
+            <code>expand</code>.
         </dd>
 
 

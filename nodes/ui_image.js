@@ -13,6 +13,13 @@ module.exports = function (RED) {
 
         var processImage = null;
 
+        if (config.path === undefined) {
+            config.path = {
+                path: null,
+                ref: null
+            };
+        }
+
         var hei = Number(config.height || 0);
 
         var image;
@@ -149,7 +156,7 @@ module.exports = function (RED) {
 
                 // console.log("Inicio processImage: ", processImage);
 
-                if(msg.payload !== undefined || msg.url !== undefined){
+                if (msg.payload !== undefined || msg.url !== undefined) {
 
                     // console.log("Change Image: ", msg.payload, msg.url);
 
@@ -158,7 +165,7 @@ module.exports = function (RED) {
                     } else {
                         link = "/uiimage/" + value.category + "/" + value.name;
                     }
-    
+
                     if (msg.url !== undefined) {
                         // console.log("SetImage:", msg.url);
                         link = msg.url;
@@ -166,13 +173,13 @@ module.exports = function (RED) {
 
                     processImage = link;
 
-                    if(msg.initialImage !== undefined){
+                    if (msg.initialImage !== undefined) {
                         processImage = msg.initialImage;
-                    }                  
+                    }
 
                     // console.log("processImage: ", processImage);
 
-                }else{
+                } else {
                     link = processImage;
                 }
 
