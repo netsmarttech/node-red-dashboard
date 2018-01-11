@@ -1,5 +1,20 @@
 
-### 2.7.0-beta: Milestone Release
+### 2.8.0-beta: Milestone Release
+
+**Enhancements**
+
+ - Allow groups to be collapsed (extra option in group config) - PR #333 Issue #73 and #177
+ - Add a bit more status to switch, slider, numeric and dropdown - Issue #335
+ - Add vertical slider capability if height > width
+ - Add scope.theme to ui_template scope to allow users to pick up default colours
+ - Add scope watch example to ui_template info panel
+
+**Fixes**
+
+ - Fix text time input format to report in millisecs from local midnight
+ - Fix change tab event to report correctly when switching to tab 0
+
+### 2.7.0: Milestone Release
 
 **Enhancements**
 
@@ -8,7 +23,7 @@
  - Let boolean false values also create gaps in charts (as well as null)
  - Add status to switch widget (and slider, numeric and dropdown) - Issue #314
  - Add "welcome" page to blank dashboard - Issue #318
- - Add start of i18n for base pages - PR #315
+ - Add i18n for base pages (thanks Nishiyama-san)- PR #315
 
 **Fixes**
 

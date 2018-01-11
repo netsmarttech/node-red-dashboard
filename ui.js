@@ -283,7 +283,7 @@ function add(opt) {
     };
 }
 
-//from: http://stackoverflow.com/a/28592528/3016654
+//from: https://stackoverflow.com/a/28592528/3016654
 function join() {
     var trimRegex = new RegExp('^\\/|\\/$','g'),
     paths = Array.prototype.slice.call(arguments);
@@ -336,14 +336,16 @@ function init(server, app, log, redSettings) {
         socket.on(updateValueEventName, ev.emit.bind(ev, updateValueEventName));
         socket.on('ui-replay-state', function() {
             var ids = Object.getOwnPropertyNames(replayMessages);
-            ids.forEach(function (id) {
-                socket.emit(updateValueEventName, replayMessages[id]);
-            });
+            setTimeout(function() {
+                ids.forEach(function (id) {
+                    socket.emit(updateValueEventName, replayMessages[id]);
+                });
+            }, 50);
             socket.emit('ui-replay-done');
         });
         socket.on('ui-change', function(index) {
             var name = "";
-            if (index && !isNaN(index) && menu.length > 0 && index <= menu.length) {
+            if ((index != null) && !isNaN(index) && (menu.length > 0) && (index <= menu.length)) {
                 name = (menu[index].hasOwnProperty("header") && typeof menu[index].header !== 'undefined') ? menu[index].header : menu[index].name;
                 ev.emit("changetab", index, name, socket.client.id, socket.request.connection.remoteAddress);
             }

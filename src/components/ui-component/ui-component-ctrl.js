@@ -142,6 +142,52 @@ angular.module('ui').controller('uiComponentController', ['$scope', 'UiEvents', 
                     break;
                 }
 
+                case 'text-input':
+                case 'text-input-CR': {
+                    if (me.item.mode == "time") {
+                        me.processInput = function (msg) {
+                            var dtmval = new Date(msg.value);
+                            // initial check for millisecond timestamp
+                            if ( isNaN(msg.value) ) {
+                                // first check for a time string like "22:30"
+                                var check = msg.value.match(/^(\d\d):(\d\d)/);
+                                if (check == null) {
+                                    // then check for an input date (string)
+                                    var millis = Date.parse(msg.value);
+                                    if ( isNaN(millis) ) {
+                                        millis = Date.now();     // unknown format, default to now
+                                    }
+                                    dtmval = new Date(millis);
+                                }
+                                else {
+                                    dtmval = new Date("1970-01-01 " + check[1] + ":" + check[2] + ":00Z");
+                                }
+                            }
+                            dtmval.setMilliseconds(0);
+                            dtmval.setSeconds(0);
+                            msg.value = dtmval;
+                            me.item.value = msg.value;
+                        }
+                        me.item.me = me;
+                    }
+                    if ((me.item.mode === "week") || (me.item.mode === "month")) {
+                        me.processInput = function (msg) {
+                            var dtmval = new Date(msg.value);
+                            if ( isNaN(msg.value) ) {
+                                var millis = Date.parse(msg.value);
+                                if ( isNaN(millis) ) { millis = Date.now(); }
+                                dtmval = new Date(millis);
+                            }
+                            dtmval.setMilliseconds(0);
+                            dtmval.setSeconds(0);
+                            msg.value = dtmval;
+                            me.item.value = msg.value;
+                        }
+                        me.item.me = me;
+                    }
+                    break;
+                }
+
                 case 'date-picker': {
                     if (me.item.ddd !== undefined) {
                         if (typeof me.item.ddd === "string") {

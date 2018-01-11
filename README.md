@@ -1,11 +1,13 @@
 # node-red-dashboard
 
+![NPM version](https://badge.fury.io/js/node-red-dashboard.svg)
+
 This module provides a set of nodes in Node-RED to quickly create a live data
 dashboard.
 
-<img src="http://nodered.org/images/dashboarde.png"/>
-
 For the latest updates see the [CHANGELOG.md](https://github.com/node-red/node-red-dashboard/blob/master/CHANGELOG.md)
+
+<img src="http://nodered.org/images/dashboarde.png"/>
 
 ## Pre-requisites
 
@@ -13,7 +15,7 @@ Node-RED-Dashboard requires Node-RED version 0.14 or more recent.
 
 ## Install
 
-To install the stable version run the following command in your Node-RED user directory (typically `~/.node-red`):
+To install the stable version use the `Menu - Manage palette` option and search for `node-red-dashboard`, or run the following command in your Node-RED user directory (typically `~/.node-red`):
 
     npm i node-red-dashboard
 
