@@ -20,7 +20,7 @@ module.exports = function (RED) {
             };
         }
 
-        var hei = Number(config.height || 0);
+        var hei = Number(config.height || 5);
 
         var image;
         var defines;
@@ -33,17 +33,13 @@ module.exports = function (RED) {
 
         var tab = null;
 
-        if (config.templateScope !== 'global') {
-            tab = RED.nodes.getNode(group.config.tab);
-            if (!tab) {
-                return;
-            }
-            if (!config.width) {
-                config.width = group.config.width;
-            }
+        tab = RED.nodes.getNode(group.config.tab);
+        if (!tab) {
+            return;
         }
-
-        var previousTemplate = null;
+        if (!config.width) {
+            config.width = group.config.width;
+        }
 
         image = "<div ng-style=\"msg.image\"></div>";
 
@@ -150,15 +146,9 @@ module.exports = function (RED) {
             },
             beforeEmit: function (msg, value) {
 
-                // console.log("Chamou dentro beforeEmit - MSG: ", msg, " - value: ", value);
-
                 let link;
 
-                // console.log("Inicio processImage: ", processImage);
-
                 if (msg.payload !== undefined || msg.url !== undefined) {
-
-                    // console.log("Change Image: ", msg.payload, msg.url);
 
                     if (typeof value === 'string') {
                         link = "/uiimage/" + value;
@@ -167,7 +157,6 @@ module.exports = function (RED) {
                     }
 
                     if (msg.url !== undefined) {
-                        // console.log("SetImage:", msg.url);
                         link = msg.url;
                     }
 
@@ -177,14 +166,11 @@ module.exports = function (RED) {
                         processImage = msg.initialImage;
                     }
 
-                    // console.log("processImage: ", processImage);
-
                 } else {
                     link = processImage;
                 }
 
                 if (msg.layout !== undefined) {
-                    // console.log("SetLayout:", msg.layout);
                     defineLayout(msg.layout);
                 }
 
@@ -195,35 +181,18 @@ module.exports = function (RED) {
                     msg.image = value;
                 }
 
-
                 var properties = Object.getOwnPropertyNames(msg).filter(function (p) {
                     return p[0] != '_';
                 });
 
-
-                var clonedMsg = {
-                    templateScope: config.templateScope
-                };
+                var clonedMsg = {};
 
                 for (var i = 0; i < properties.length; i++) {
                     var property = properties[i];
                     clonedMsg[property] = msg[property];
                 }
 
-                // transform to string if msg.template is buffer
-                if (clonedMsg.template !== undefined && Buffer.isBuffer(clonedMsg.template)) {
-                    clonedMsg.template = clonedMsg.template.toString();
-                }
-
-                if (clonedMsg.template === undefined && previousTemplate !== null) {
-                    clonedMsg.template = previousTemplate;
-                }
-
-                if (clonedMsg.template) {
-                    previousTemplate = clonedMsg.template
-                }
-
-                return { //Return da função
+                return {
                     msg: clonedMsg
                 };
 
