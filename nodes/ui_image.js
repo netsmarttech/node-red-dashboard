@@ -6,7 +6,9 @@ module.exports = function (RED) {
     var mkdirp = require('mkdirp');
 
     function ImageNode(config) {
+
         RED.nodes.createNode(this, config);
+
         var node = this;
 
         var currentImage = null;
@@ -23,6 +25,7 @@ module.exports = function (RED) {
         var hei = Number(config.height || 5);
 
         var image;
+
         var defines;
 
         var group = RED.nodes.getNode(config.group);
@@ -51,8 +54,6 @@ module.exports = function (RED) {
 
                 case 'adjust':
 
-                    // console.log("--> adjust");
-
                     defines = {
                         'width': '100%',
                         'height': '100%',
@@ -66,8 +67,6 @@ module.exports = function (RED) {
 
                 case 'center':
 
-                    // console.log("--> center");
-
                     defines = {
                         'width': '100%',
                         'height': '100%',
@@ -79,8 +78,6 @@ module.exports = function (RED) {
                     break;
 
                 case 'expand':
-
-                    // console.log("--> expand");
 
                     defines = {
                         'width': '100%',
@@ -94,8 +91,6 @@ module.exports = function (RED) {
                     break;
 
                 case 'side':
-
-                    // console.log("--> side"); 
 
                     defines = {
                         'width': '100%',
@@ -142,7 +137,7 @@ module.exports = function (RED) {
                 type: 'template',
                 width: config.width || 6,
                 height: hei,
-                format: image //config.format,
+                format: image
             },
             beforeEmit: function (msg, value) {
 
@@ -250,8 +245,8 @@ module.exports = function (RED) {
             var controlFiles = filesUpload;
 
             mkdirp(pathBase, (err) => {
+
                 if (err) {
-                    // res.status(500).send(err).end();
                     error.push({
                         cod: 500,
                         msg: err
@@ -264,7 +259,7 @@ module.exports = function (RED) {
                     name = files[i].name;
 
                     if (!(/\.(gif|jpg|jpeg|tiff|png)$/i).test(name)) {
-                        // res.status(400).send('incompatible file').end();
+
                         error.push({
                             cod: 400,
                             msg: 'incompatible file'
@@ -294,8 +289,7 @@ module.exports = function (RED) {
                         controlFiles--;
 
                         if (err) {
-                            console.log("Error rename", err);
-                            // res.status(500).send(err).end();
+
                             error.push({
                                 cod: 500,
                                 msg: err
@@ -311,7 +305,6 @@ module.exports = function (RED) {
                             ref: reference
                         };
 
-                        // res.status(201).send(obj).end();
                         success.push(obj);
 
                         if (controlFiles == 0) {
@@ -371,7 +364,6 @@ module.exports = function (RED) {
             var listUncategorized = [];
 
             var numFiles = files.length;
-
 
             files.forEach(file => {
 
@@ -433,8 +425,6 @@ module.exports = function (RED) {
                 });
             });
         });
-
-        // ---->. Fim
     }); //--> GET /uiimage
 
     RED.httpAdmin.get("/uiimage/category/", (req, res) => {
@@ -566,7 +556,6 @@ module.exports = function (RED) {
                 });
             }
 
-
             files.forEach((file) => {
                 let filePath = path.join(categoryPath, file);
 
@@ -575,7 +564,6 @@ module.exports = function (RED) {
                     contFiles--;
 
                     if (err) {
-                        // trata erro
                         return;
                     }
 
@@ -656,5 +644,4 @@ module.exports = function (RED) {
             });
         });
     }
-
 };

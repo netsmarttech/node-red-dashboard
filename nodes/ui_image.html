@@ -92,8 +92,6 @@
 
             function getListCategories(selected) {
 
-                // console.log("List Categories: ", selected, that.file);
-
                 $("#node-input-category").find("option").remove().end();
 
                 $("#node-input-category").append($("<option></option>").val("not-select").text(""));
@@ -125,11 +123,7 @@
 
             function getListImages(category, selected) {
 
-                // console.log("List Images: ", that.category, that.file);
-
                 $("#node-input-file").find("option").remove().end();
-
-                // console.log("List Images: ", category, selected);
 
                 let link = "/uiimage/" + category + "/images/";
 
@@ -149,7 +143,6 @@
                         $("#node-input-file").append(option);
 
                     });
-
 
                     if (images.length > 0) {
                         if (selected === undefined || selected === null) {
@@ -276,8 +269,6 @@
 
                 var value = input_file.val();
 
-                // console.log("Delete Image: ", value);
-
                 if (value == null || value == '') {
                     RED.notify("Not selected image for remove", "error", false, 5000);
                     return;
@@ -289,8 +280,8 @@
                     url: newUrl,
                     type: 'DELETE',
                     cache: false,
-                    processData: false, // Don't process the files
-                    contentType: false, // Set content type to false as jQuery will tell the server its a query string request
+                    processData: false,
+                    contentType: false,
                     success: function (data, textStatus) {
 
                         that.path = null;
@@ -332,16 +323,14 @@
 
                 let value = $('#node-input-category').val();
 
-                // console.log("Delete Category: ", value);
-
                 let newUrl = "/uiimage/" + value;
 
                 $.ajax({
                     url: newUrl,
                     type: 'DELETE',
                     cache: false,
-                    processData: false, // Don't process the files
-                    contentType: false, // Set content type to false as jQuery will tell the server its a query string request
+                    processData: false,
+                    contentType: false,
                     success: function (data, textStatus) {
 
                         that.path = null;
@@ -370,8 +359,6 @@
 
                 let value = input_category.val();
 
-                // console.log("Change Category: ", value, input_category.val());
-
                 if (value === "not-select") {
                     input_file.find('option').remove().end();
                     input_link.val("");
@@ -384,7 +371,6 @@
                     return;
                 }
 
-
                 if (value !== null) {
                     div_file.show();
                     getListImages(value);
@@ -394,8 +380,6 @@
             input_file.change(function () {
 
                 var value = input_file.val();
-
-                // console.log("Change File: ", value);
 
                 if (value != null && value != undefined) {
                     var url = '/uiimage/' + value;
@@ -453,23 +437,18 @@
                 }
 
                 if (category == 'not-select' || category == '') {
-                    // console.log("Error - Category: ", category);
                     return null;
                 }
 
                 if (lockUpload) {
-                    // console.log("Error - Category lockUpload ");
                     return null;
                 }
 
                 if (category == null) {
-                    // console.log("Error - Category: ", category);
                     return null;
                 }
 
                 category = category.trim();
-
-                // console.log("Category: ", category);
 
                 return category;
             }
@@ -524,9 +503,6 @@
                         that.category = data.category;
 
                         setNewCategory = false;
-
-                        // changeCategory();
-
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
                         console.log('ERRORS: ', errorThrown, textStatus, jqXHR);
@@ -573,9 +549,6 @@
                 }
 
                 if (lockUpload || category == null) {
-
-                    // console.log("Incompatible Category - lockUpload: ", lockUpload, category);
-
                     RED.notify("Invalid category", "error", false, 5000);
                     return;
                 }
@@ -585,12 +558,9 @@
                     return;
                 }
 
-                // console.log("Upload Proccess");
+                event.stopPropagation();
+                event.preventDefault();
 
-                event.stopPropagation(); // Stop stuff happening
-                event.preventDefault(); // Totally stop stuff happening
-
-                // Create a formdata object and add the files
                 var data = new FormData();
 
                 $.each(files, function (key, value) {
@@ -683,7 +653,6 @@
                     }
                 ]
             });
-
         }
     });
 </script>
