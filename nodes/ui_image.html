@@ -11,10 +11,8 @@
                 value: ''
             },
             width: {
-                value: 5,
+                value: 0,
                 validate: function (v) {
-                    var valid = true
-
                     var width = v || 0;
                     var currentGroup = $('#node-input-group').val() || this.group;
                     var groupNode = RED.nodes.node(currentGroup);
@@ -24,9 +22,7 @@
                     return valid;
                 }
             },
-            height: {
-                value: 5
-            },
+            height: {value: 0},
             category: {},
             file: {},
             path: {},

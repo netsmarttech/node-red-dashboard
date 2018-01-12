@@ -22,8 +22,6 @@ module.exports = function (RED) {
             };
         }
 
-        var hei = Number(config.height || 5);
-
         var image;
 
         var defines;
@@ -136,7 +134,7 @@ module.exports = function (RED) {
             control: {
                 type: 'template',
                 width: config.width || 6,
-                height: hei,
+                height: config.height || config.width,
                 format: image
             },
             beforeEmit: function (msg, value) {
