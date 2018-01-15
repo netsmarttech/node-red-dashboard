@@ -5,7 +5,7 @@
         defaults: {
             group: {
                 type: 'ui_group',
-                required: false
+                required: true
             },
             name: {
                 value: ''
@@ -22,7 +22,9 @@
                     return valid;
                 }
             },
-            height: {value: 0},
+            height: {
+                value: 0
+            },
             category: {},
             file: {},
             path: {},
@@ -629,21 +631,20 @@
                 width: 550,
                 height: "auto",
                 buttons: [{
+                        id: "bt-cancel-remove",
+                        text: "Cancel",
+
+                        click: function () {
+                            $(this).dialog("close");
+                        }
+                    },
+                    {
                         id: "bt-confirm-remove",
                         text: "Remove",
                         class: "primary",
 
                         click: function () {
                             removeCategory();
-                            $(this).dialog("close");
-                        }
-                    },
-                    {
-                        id: "bt-cancel-remove",
-                        text: "Cancel",
-                        class: "primary",
-
-                        click: function () {
                             $(this).dialog("close");
                         }
                     }
