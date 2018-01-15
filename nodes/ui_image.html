@@ -248,7 +248,7 @@
                         viewControl(VIEW_POS_DELETE_IMAGE);
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
-                        console.log('ERRORS: ' + errorThrown);
+                        RED.notify("Error API: " + errorThrown, "error", false, 5000);
                     }
                 });
             });
@@ -293,7 +293,7 @@
                         viewControl(VIEW_INIT);
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
-                        console.log('ERRORS: ' + errorThrown);
+                        RED.notify("Error API: " + errorThrown, "error", false, 5000);
                     }
                 });
             };
@@ -454,7 +454,7 @@
 
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
-                        console.log('ERRORS: ', errorThrown, textStatus, jqXHR);
+                        RED.notify("Error API: " + errorThrown, "error", false, 5000);
                     }
                 });
             }
@@ -559,7 +559,7 @@
 
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
-                        console.log('ERRORS: ', errorThrown, textStatus, jqXHR);
+                        RED.notify("Error API: " + errorThrown, "error", false, 5000);
                     }
                 });
             }
