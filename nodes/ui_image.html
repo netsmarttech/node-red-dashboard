@@ -282,7 +282,10 @@
                     contentType: false,
                     success: function (data, textStatus) {
 
-                        that.path = null;
+                        that.path = {
+                            path: null,
+                            ref: null
+                        };
 
                         let category = input_category.val();
 
@@ -331,7 +334,10 @@
                     contentType: false,
                     success: function (data, textStatus) {
 
-                        that.path = null;
+                        that.path = {
+                            path: null,
+                            ref: null
+                        };
 
                         getListCategories(undefined);
 
