@@ -1,9 +1,10 @@
+var formidable = require('formidable');
+var fs = require('fs');
+var path = require('path');
+var mkdirp = require('mkdirp');
+
 module.exports = function (RED) {
     var ui = require('../ui')(RED);
-    var formidable = require('formidable');
-    var fs = require('fs');
-    var path = require('path');
-    var mkdirp = require('mkdirp');
 
     function ImageNode(config) {
 
@@ -225,16 +226,17 @@ module.exports = function (RED) {
         var error = [];
         var success = [];
 
+        //TODO: debug form data
+        console.log('>> POST IMAGE - BODY', req.body);
+
         var form = new formidable.IncomingForm();
-
         form.multiples = true;
-
         form.uploadDir = pathUpload;
 
         form.parse(req, function (err, fields, files) {
 
             var filesUpload = form.openedFiles.length;
-            let category = req.params.category;
+            let category = sanitizeInput(req.params.category);
             let name;
             let extension;
 
@@ -321,119 +323,57 @@ module.exports = function (RED) {
         });
     }); //--> POST /uiimage/'category'/'id'
 
-    RED.httpAdmin.post('/uiimage/category/', (req, res) => {
+    /**
+     * Creates a category.Returns the list of current categories
+     * @returns 200 - JSON with all the categories
+     * @returns 500 - system error
+     */
+    //TODO: use the :category instead of a multpart form post
+    RED.httpAdmin.post('/uiimage/:category', (req, res) => {
 
-        var form = new formidable.IncomingForm();
+        let dirCategory = path.join(pathDir, sanitizeInput(req.params.category));
 
-        form.multiples = true;
+        mkdirp(dirCategory, (err) => {
+            if (err) {
+                res.status(500).send(err);
+                return;
+            }
 
-        form.uploadDir = pathUpload;
-
-        form.parse(req, function (err, fields, files) {
-
-            let category = fields.category;
-
-            var pathBase = path.join(pathDir, category);
-
-            mkdirp(pathBase, (err) => {
-                if (err) {
-                    res.status(500).send(err);
-                    return;
-                }
-
-                res.status(201).send({
-                    'category': category
-                });
-            });
+            restListCategories(req, res);
         });
     }); //--> POST /uiimage/category/
 
-    RED.httpAdmin.get("/uiimage", (req, res) => {
+    /**
+     * Returns a list of categories
+     * @returns 200 - JSON with all the categories
+     * @returns 500 - system error
+     */
+    function restListCategories(req, res) {
+
+        let responseDone = false
+        function doResponse(code, data){
+            if(responseDone) return;
+            responseDone = true;
+
+            res.status(code);
+            if(data) res.json(data);
+            res.end();
+        }
 
         fs.readdir(pathDir, 'utf-8', (err, files) => {
 
             if (err) {
-                res.status(500).send(err).end();
+                doResponse(500, err);
                 return;
             }
 
             var response = [];
             var listCategory = [];
-            var listUncategorized = [];
 
             var numFiles = files.length;
 
-            files.forEach(file => {
-
-                var dirFile = path.join(pathDir, file);
-
-                fs.stat(dirFile, (err, stat) => {
-                    if (err) {
-                        res.status(500).send(err).end();
-                        return;
-                    }
-
-                    if (stat.isDirectory()) {
-
-                        var category = file;
-                        listCategory.push(category);
-
-                        listFilesDir(dirFile, (err, files) => {
-                            if (err) {
-                                res.status(500).send(err).end();
-                                return;
-                            }
-
-                            let obj = {
-                                name: category,
-                                list: files
-                            };
-                            response.push(obj);
-
-                            numFiles--;
-
-                            if (numFiles === 0) {
-                                let obj = {
-                                    object: response,
-                                    listCat: listCategory
-                                };
-
-                                res.status(200).send(obj).end();
-                                return;
-                            }
-
-                        });
-
-                        return;
-                    }
-
-                    numFiles--;
-
-                    if (numFiles === 0) {
-
-                        let obj = {
-                            object: response,
-                            listCat: listCategory
-                        };
-
-                        res.status(200).send(obj).end();
-                        return;
-                    }
-
-                });
-            });
-        });
-    }); //--> GET /uiimage
-
-    RED.httpAdmin.get("/uiimage/category/", (req, res) => {
-
-        fs.readdir(pathDir, 'utf-8', (err, files) => {
-
-            var categories = [];
-            var numFiles = files.length;
-
-            if (err) {
-                res.status(500).send(err).end();
+            if(!numFiles) {
+                doResponse(200, response);
                 return;
             }
 
@@ -443,59 +383,65 @@ module.exports = function (RED) {
 
                 fs.stat(dirFile, (err, stat) => {
                     if (err) {
-                        res.status(500).send(err).end();
+                        doResponse(500, err);
                         return;
                     }
-
-                    if (stat.isDirectory()) {
-                        categories.push(file);
-                    }
-
+                    
                     numFiles--;
 
+                    if (stat.isDirectory()) {
+                        response.push(file);
+                    }
+
                     if (numFiles === 0) {
-                        res.status(200).json(categories).end();
-                        return;
+                        doResponse(200, response);
                     }
                 });
             });
         });
-    }); //--> GET /uiimage/category/
+    }; //--> GET /uiimage
+    RED.httpAdmin.get("/uiimage", restListCategories);
 
-    RED.httpAdmin.get("/uiimage/:category/images/", (req, res) => {
+    /**
+     * Gets a JSON with the content of a category
+     * @returns 200 - JSON with all the images inside this category
+     * @returns 404 - category not found
+     * @returns 500 - system error
+     */
+    RED.httpAdmin.get("/uiimage/:category", (req, res) => {
 
-        let pathCategory = path.join(pathDir, req.params.category);
+        let pathCategory = path.join(pathDir, sanitizeInput(req.params.category));
 
-        fs.stat(pathCategory, (err, stat) => {
-
+        listFilesDir(pathCategory, (err, files) => {
             if (err) {
-                res.status(500).send(err).end();
+                if(err.code === 'ENOENT') {
+                    res.status(404).end();
+                } else {
+                    res.status(500).json(err).end();
+                }
                 return;
             }
 
-            if (stat.isDirectory()) {
-                listFilesDir(pathCategory, (err, files) => {
-                    if (err) {
-                        res.status(500).send(err).end();
-                        return;
-                    }
-
-                    res.status(200).json(files).end();
-                });
-            }
+            res.status(200).json(files).end();
         });
+
     }); //--> GET /uiimage/:category/images/
 
+    /**
+     * Gets the specified image
+     * @returns 200 - the image
+     * @returns 404 - image not found
+     */
     RED.httpAdmin.get("/uiimage/:category/:id", (req, res) => {
 
-        let id = req.params.id;
-        let category = req.params.category;
+        let id = sanitizeInput(req.params.id);
+        let category = sanitizeInput(req.params.category);
 
         var pathImage = path.join(pathDir, category, id);
 
         fs.access(pathImage, (err) => {
             if (err) {
-                res.status(404).send(err).end();
+                res.status(404).json(err).end();
                 return;
             }
 
@@ -505,10 +451,16 @@ module.exports = function (RED) {
 
     }); //--> GET /uiimage/'category'/'id'
 
+    /**
+     * Deletes an image inside a category
+     * @returns 204 - OK
+     * @returns 404 - image not found
+     * @returns 500 - system error
+     */
     RED.httpAdmin.delete("/uiimage/:category/:id", (req, res) => {
 
-        let id = req.params.id;
-        let category = req.params.category;
+        let id = sanitizeInput(req.params.id);
+        let category = sanitizeInput(req.params.category);
 
         var file = path.join(pathDir, category, id);
 
@@ -516,42 +468,65 @@ module.exports = function (RED) {
 
             if (err) {
                 res.status(404).send(err).end();
+                if (err.code === 'ENOENT') {
+                    res.status(404).end();
+                } else {
+                    res.status(500).json(err).end();
+                }
                 return;
             }
 
-            res.status(200).end();
+            res.status(204).end();
             return;
 
         });
     }); //--> DELETE /uiimage/'category'/'id'
 
-    RED.httpAdmin.delete("/uiimage/:category/", (req, res) => {
+    /**
+     * Deletes a category, and all images that it may contain
+     * @returns 204 - OK
+     * @returns 404 - category not found
+     * @returns 500 - system error
+     */
+    RED.httpAdmin.delete("/uiimage/:category", (req, res) => {
 
-        let category = req.params.category;
+        let categoryPath = path.join(pathDir, sanitizeInput(req.params.category));
+        let responseDone = false;
 
-        var categoryPath = path.join(pathDir, category);
+        function doResponse(code, data){
+            if(responseDone) return;
+            responseDone = true;
+
+            res.status(code)
+            if(data) res.json(data);
+            res.end();
+        }
 
         fs.readdir(categoryPath, 'utf-8', (err, files) => {
 
             if (err) {
-                res.status(500).send(err);
+                if (err.code === 'ENOENT') {
+                    doResponse(404);
+                } else {
+                    doResponse(500, err);
+                }
                 return;
             }
 
-            var contFiles = files.length;
+            let contFiles = files.length;
 
+            // remove folder if empty
             if (contFiles === 0) {
-
                 fs.rmdir(categoryPath, (err) => {
                     if (err) {
                         console.log("Error: ", err);
-                        res.status(500).send(err);
+                        doResponse(500, err);
                         return;
                     }
 
-                    res.sendStatus(200);
-
+                    doResponse(204);
                 });
+                return;
             }
 
             files.forEach((file) => {
@@ -562,19 +537,18 @@ module.exports = function (RED) {
                     contFiles--;
 
                     if (err) {
+                        doResponse(500, err);
                         return;
                     }
 
                     if (contFiles === 0) {
-
                         fs.rmdir(categoryPath, (err) => {
                             if (err) {
-                                res.status(500).send(err);
+                                doResponse(500, err);
                                 return;
                             }
 
-                            res.sendStatus(200);
-
+                            doResponse(204);
                         });
                     }
                 });
@@ -584,62 +558,75 @@ module.exports = function (RED) {
 
     ///------> API
 
+};
 
-    function listFilesDir(pathDir, cb) {
+// list the files inside a directory
+function listFilesDir(pathDir, cb) {
 
-        let callbackDone = false;
+    let callbackDone = false;
+    function doCallback(err, data) {
+        if (callbackDone) return;
+        callbackDone = true;
+        cb(err, data);
+    }
 
-        function doCallback(err, data) {
-            if (callbackDone) return;
-            callbackDone = true;
-            cb(err, data);
+    let images = [];
+
+    fs.readdir(pathDir, 'utf-8', (err, files) => {
+
+        if (err) {
+            doCallback(err, null);
+            return;
         }
 
-        let image = [];
+        let countFiles = files.length;
 
-        fs.readdir(pathDir, 'utf-8', (err, files) => {
+        if (countFiles === 0) {
+            doCallback(null, images);
+            return;
+        }
 
-            if (err) {
-                doCallback(err, null);
-                return;
-            }
+        files.forEach(file => {
 
-            let countFiles = files.length;
+            fs.stat(path.join(pathDir, file), (err, stat) => {
 
-            if (countFiles === 0) {
-                doCallback(null, image);
-                return;
-            }
+                countFiles--;
 
-            files.forEach(file => {
+                if (err) {
+                    doCallback(err, null);
+                    return;
+                }
 
-                fs.stat(path.join(pathDir, file), (err, stat) => {
+                if (!stat.isDirectory()) {
+                    images.push(file);
+                }
 
-                    if (err) {
-                        doCallback(err, null);
-                        return;
-                    }
+                if (countFiles === 0) {
+                    doCallback(null, images);
+                }
 
-                    if (stat.isDirectory()) {
-                        countFiles--;
-
-                        if (countFiles === 0) {
-                            doCallback(null, image);
-                        }
-
-                        return;
-                    }
-
-                    image.push(file);
-
-                    countFiles--;
-
-                    if (countFiles === 0) {
-                        doCallback(null, image);
-                    }
-
-                });
             });
         });
+    });
+}
+
+// inspired on https://github.com/parshap/node-sanitize-filename
+const sanitizeInput = (function(str){
+    const illegalRe = /[\/\?<>\\:\*\|":]/g;
+    const controlRe = /[\x00-\x1f\x80-\x9f]/g;
+    const reservedRe = /^\.+$/;
+    const windowsReservedRe = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
+    const windowsTrailingRe = /[\. ]+$/;
+
+    const replacement = '_';
+
+    return function sanitizeInput(str) {
+
+        return (str || "")
+            .replace(illegalRe, replacement)
+            .replace(controlRe, replacement)
+            .replace(reservedRe, replacement)
+            .replace(windowsReservedRe, replacement)
+            .replace(windowsTrailingRe, replacement);
     }
-};
+})();

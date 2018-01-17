@@ -25,9 +25,12 @@
             height: {
                 value: 0
             },
-            category: {},
-            file: {},
-            path: {},
+            category: {
+                value: ''
+            },
+            file: {
+                value: ''
+            },
             layout: {
                 value: 'adjust'
             }
@@ -43,22 +46,6 @@
             return this.name ? "node_label_italic" : "";
         },
         oneditprepare: function () {
-
-            const VIEW_INIT = 'view_init';
-            const VIEW_NEW_CATEGORY = 'view_new_category';
-            const VIEW_NEW_IMAGE = 'view_new_image';
-            const VIEW_DIV_FILE = 'view_div_file';
-            const VIEW_POS_DELETE_IMAGE = "view_pos_delete_image";
-            const VIEW_SHOW_IMAGE = 'view_show_image';
-            const VIEW_HIDE_IMAGE = 'view_hide_image';
-            const VIEW_NOT_CATEGORY = 'view_not_category';
-            const VIEW_SHOW_PROGRESS = 'view_show_progress';
-            const VIEW_POS_SAVE_CATEGORY = 'view_pos_save_category';
-            const VIEW_CHANGE_CATEGORY = 'view_change_category';
-            const VIEW_NOT_IMAGE = 'view_not_image';
-            const VIEW_POS_UPLOAD_IMAGE = 'view_pos_upload_image';
-            const VIEW_IMAGE_CANCEL = 'view_image_cancel';
-
             const bt_category_new = $("#bt-category-new");
             const bt_category_cancel = $('#bt-category-cancel');
             const bt_category_remove = $('#bt-category-remove');
@@ -69,15 +56,17 @@
             const bt_image_remove = $('#bt-image-remove');
             const bt_image_options = $('#bt-image-options');
 
+            var divCategory = $('#div-category');
+            var divNewCategory = $('#div-new-category');
+            var divFile = $('#div-file');
+            var divNewFile = $('#div-new-file');
+
             const input_file = $('#node-input-file');
             const input_category = $('#node-input-category');
             const input_link = $('#node-input-link');
-            const input_new_category = $("#node-input-newCategory");
+            const input_new_category = $("#node-input-new-category");
             const image_preview = $('#image-preview');
             const bar_progress = $("#progress-upload");
-
-            var setNewCategory = false;
-            var lockUpload = false;
 
             $("#node-input-size").elementSizer({
                 width: "#node-input-width",
@@ -86,348 +75,122 @@
             });
 
             var that = this;
+            var filesToUpload = null;
 
-            viewControl(VIEW_INIT);
+            // ----- functions -----
 
-            getListCategories(that.category);
+            function copyLinkToClipboard() {
+                var $temp = $("<input>");
+                $("body").append($temp);
+                var val = $("#node-input-link").val();
+                $temp.val(val).select();
+                document.execCommand("copy");
+                $temp.remove();
+                RED.notify('"' + val + '" copied to clipboard!', 'status', false, 1500);
+            }
 
-            input_category.val(that.category);
+            function updateCategoryList(selected) {
+                var input_category = $('#node-input-category');
+                var input_file = $('#node-input-file');
 
-            function getListCategories(selected) {
+                divNewCategory.hide();
+                divCategory.show();
+                divFile.hide();
 
-                $("#node-input-category").find("option").remove().end();
+                input_category.find("option").remove().end();
+                input_category.append($("<option></option>").val("").text(""));
 
-                $("#node-input-category").append($("<option></option>").val("not-select").text(""));
-
-                $.getJSON('/uiimage/category/', function (categories) {
+                $.getJSON('uiimage', function (categories) {
 
                     categories.forEach(function (category) {
-
                         let option = $("<option></option>");
 
-                        if (selected == (category)) {
-                            option = $("<option selected></option>");
+                        if (selected == category) {
+                            option.attr('selected', 'selected')
                         }
 
                         option.val(category);
                         option.text(category);
 
-                        $("#node-input-category").append(option);
+                        input_category.append(option);
                     });
 
-                    if (selected !== undefined && selected !== null) {
-                        if (selected != "not-select") {
-                            getListImages(selected, that.file);
-                        }
-                    }
+                    updateImageList();
                 });
             }
 
-            function getListImages(category, selected) {
+            function updateImageList() {
 
-                $("#node-input-file").find("option").remove().end();
+                var input_file = $('#node-input-file');
+                var category = $('#node-input-category').val();
 
-                let link = "/uiimage/" + category + "/images/";
+                divNewFile.hide();
+                divFile.hide();
 
-                $.getJSON(link, function (images) {
+                input_file.find("option").remove().end();
 
+                if(!category) return updateImagePreview(); //leave it empty if there's no category
+
+                $.getJSON("uiimage/" + category, function (images) {
+
+                    divFile.show();
                     images.forEach(function (image) {
 
                         let option = $("<option></option>");
 
-                        if (selected == (category + "/" + image)) {
-                            option = $("<option selected></option>");
+                        if (that.file == image) {
+                            option.attr('selected', 'selected')
                         }
 
-                        option.val(category + "/" + image);
+                        option.val(image);
                         option.text(image);
 
-                        $("#node-input-file").append(option);
-
+                        input_file.append(option);
                     });
 
-                    if (images.length > 0) {
-                        if (selected === undefined || selected === null) {
-
-                            let value = category + "/" + images[0];
-                            let url = '/uiimage/' + value;
-
-                            $("#node-input-link").val(value);
-                            $("#image-preview").attr('src', url);
-
-                            this.file = value;
-
-                            that.path = {
-                                path: url,
-                                ref: value
-                            };
-
-                        } else {
-
-                            let value = selected;
-                            let url = '/uiimage/' + value;
-
-                            $("#node-input-link").val(value);
-                            $("#image-preview").attr('src', url);
-
-                            this.file = value;
-
-                            that.path = {
-                                path: url,
-                                ref: value
-                            };
-
-                        }
-
-                        viewControl(VIEW_SHOW_IMAGE);
-
-                    } else {
-                        input_link.val('');
-                        viewControl(VIEW_NOT_IMAGE);
-                    }
+                    updateImagePreview();
                 });
             }
 
-            bt_category_new.click(function () {
-                viewControl(VIEW_NEW_CATEGORY);
-                input_link.val('');
-                setNewCategory = true;
-            });
+            function updateImagePreview() {
+                var file = $('#node-input-file').val();
+                var category = $('#node-input-category').val();
+                var image_preview = $("#image-preview");
 
-            bt_image_new.click(function () {
-                viewControl(VIEW_NEW_IMAGE);
-            });
-
-            bt_category_cancel.click(function () {
-
-                let category = input_category.val();
-
-                getListCategories(category);
-
-                setNewCategory = false;
-
-                viewControl(VIEW_INIT);
-
-            });
-
-            bt_image_cancel.click(function () {
-                getListCategories(input_category.val());
-                viewControl(VIEW_INIT);
-            });
-
-            bt_image_remove.click(function () {
-
-                var value = input_file.val();
-
-                if (value == null || value == '') {
-                    RED.notify("Not selected image for remove", "error", false, 5000);
-                    return;
-                }
-
-                var newUrl = "/uiimage/" + value;
-
-                $.ajax({
-                    url: newUrl,
-                    type: 'DELETE',
-                    cache: false,
-                    processData: false,
-                    contentType: false,
-                    success: function (data, textStatus) {
-
-                        that.path = {
-                            path: null,
-                            ref: null
-                        };
-
-                        let category = input_category.val();
-
-                        getListImages(category, undefined);
-
-                        input_link.val("");
-
-                        viewControl(VIEW_POS_DELETE_IMAGE);
-                    },
-                    error: function (jqXHR, textStatus, errorThrown) {
-                        RED.notify("Error API: " + errorThrown, "error", false, 5000);
-                    }
-                });
-            });
-
-            bt_category_remove.click(function () {
-
-                let value = $('#node-input-category').val();
-
-                if (value == null || value == 'not-select') {
-                    RED.notify("Not selected category for remove", "error", false, 5000);
-                    return;
-                }
-
-                $("#node-dialog-confirm-remove").dialog("open");
-            });
-
-            function removeCategory() {
-
-                let value = $('#node-input-category').val();
-
-                let newUrl = "/uiimage/" + value;
-
-                $.ajax({
-                    url: newUrl,
-                    type: 'DELETE',
-                    cache: false,
-                    processData: false,
-                    contentType: false,
-                    success: function (data, textStatus) {
-
-                        that.path = {
-                            path: null,
-                            ref: null
-                        };
-
-                        getListCategories(undefined);
-
-                        input_file.find("option").remove().end();
-
-                        input_link.val("");
-
-                        viewControl(VIEW_INIT);
-                    },
-                    error: function (jqXHR, textStatus, errorThrown) {
-                        RED.notify("Error API: " + errorThrown, "error", false, 5000);
-                    }
-                });
-            };
-
-            input_category.change(changeCategory);
-
-            function changeCategory() {
-
-                let value = input_category.val();
-
-                if (value === "not-select") {
-                    input_file.find('option').remove().end();
-                    input_link.val("");
-
-                    viewControl(VIEW_NOT_CATEGORY);
-
-                    that.path = {
-                        path: null,
-                        ref: null
-                    };
-                    return;
-                }
-
-                if (value !== null) {
-                    getListImages(value, undefined);
-                    viewControl(VIEW_CHANGE_CATEGORY);
-                }
-            }
-
-            input_file.change(function () {
-
-                var value = input_file.val();
-
-                if (value != null && value != undefined) {
-                    var url = '/uiimage/' + value;
-                    input_link.val(value);
-                    image_preview.attr('src', url);
-
-                    viewControl(VIEW_SHOW_IMAGE);
-
-                    that.path = {
-                        path: url,
-                        ref: value
-                    };
-
+                if(category && file) {
+                    let url = category + "/" + file
+                    image_preview.attr('src', 'uiimage/' + url);
+                    image_preview.show();
+                    input_link.val(url)
                 } else {
-                    input_link.val("");
-                    viewControl(VIEW_HIDE_IMAGE);
+                    image_preview.hide();
+                    input_link.val('');
                 }
-            });
-
-            input_new_category.focusout(function () {
-
-                if (setNewCategory) {
-                    let value = input_new_category.val();
-
-                    if ((
-                            /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-\ ]*[a-zA-Z0-9]))*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-\ ]*[A-Za-z0-9])$/
-                        ).test(value)) {
-                        input_new_category.removeClass("input-error");
-                        lockUpload = false;
-                        return;
-                    }
-
-                    input_new_category.addClass("input-error");
-                    lockUpload = true;
-                }
-            });
-
-            input_new_category.keypress(function (e) {
-                if (e.which === 13) {
-                    saveCategory();
-                }
-            });
-
-            bt_category_save.click(function () {
-                saveCategory();
-            });
-
-            function checkCategory() {
-
-                let category = input_category.val();
-                let newCategory = input_new_category.val();
-
-                input_new_category.focusout();
-
-                if (setNewCategory) {
-                    category = newCategory;
-                }
-
-                if (category == 'not-select' || category == '') {
-                    return null;
-                }
-
-                if (lockUpload) {
-                    return null;
-                }
-
-                if (category == null) {
-                    return null;
-                }
-
-                category = category.trim();
-
-                return category;
             }
 
             function saveCategory() {
 
-                let value = checkCategory();
+                //TODO: sanitize input
 
-                if (value === null) {
+                let value = input_new_category.val();
+                input_new_category.val('');
+
+                if (!value) {
                     RED.notify("Invalid category", "error", false, 5000);
                     return;
                 }
 
-                var data = new FormData();
-
-                data.append('category', value);
-
-                var link = "/uiimage/category/";
-
-                viewControl(VIEW_SHOW_PROGRESS);
-
                 $.ajax({
-                    url: link,
+                    url: 'uiimage/' + value,
                     type: 'POST',
-                    data: data,
                     cache: false,
                     processData: false,
                     contentType: false,
                     xhr: function () {
                         var xhr = new window.XMLHttpRequest();
                         //Upload progress
+                        bar_progress.val(0);
+                        bar_progress.show();
                         xhr.upload.addEventListener("progress", function (evt) {
                             if (evt.lengthComputable) {
                                 var percentComplete = evt.loaded / evt.total;
@@ -438,72 +201,56 @@
                         return xhr;
                     },
                     success: function (data, textStatus) {
-                        input_new_category.val('');
+                        bar_progress.hide();
+                        updateCategoryList(value);
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        bar_progress.hide();
+                        RED.notify("Error API: " + errorThrown, "error", false, 5000);
+                        updateCategoryList();
+                    }
+                });
+            }
 
-                        getListCategories(data.category);
+            function removeCategory() {
 
-                        bar_progress.val(0);
+                let category = input_category.val();
 
-                        input_category.val(data.category);
+                if(!category) return;
 
-                        that.category = data.category;
-
-                        setNewCategory = false;
-
-                        viewControl(VIEW_POS_SAVE_CATEGORY);
-
+                $.ajax({
+                    url: "uiimage/" + category,
+                    type: 'DELETE',
+                    cache: false,
+                    processData: false,
+                    contentType: false,
+                    success: function (data, textStatus) {
+                        updateCategoryList(undefined);
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
                         RED.notify("Error API: " + errorThrown, "error", false, 5000);
+                        updateCategoryList();
                     }
                 });
-            }
+            };
 
-            var files = null;
+            function uploadImages(event) {
 
-            $("#node-input-upload").on('change', prepareUpload);
+                let category = input_category.val();
+                let validFiles = true;
 
-            function prepareUpload(event) {
-                files = event.target.files;
-            }
+                if(!category || !filesToUpload || !filesToUpload.length) return;
 
-            $("#bt-upload").click(uploadFiles);
-
-            function incompatibleFile() {
-
-                let incompatibleFile = false;
-
-                if (files == null) {
-                    return;
-                }
-
-                $.each(files, function (key, value) {
+                $.each(filesToUpload, function (key, value) {
                     if (!(/\.(gif|jpg|jpeg|tiff|png)$/i).test(value.name)) {
-                        incompatibleFile = true;
+                        validFiles = false;
                     }
                 });
 
-                return incompatibleFile;
-            }
-
-            function uploadFiles(event) {
-
-                let category = checkCategory();
-
-                if (incompatibleFile()) {
+                if (!validFiles) {
                     RED.notify("Incompatible File", "error", false, 5000);
                     $("#node-input-upload").val('');
-                    files = null;
-                    return;
-                }
-
-                if (lockUpload || category == null) {
-                    RED.notify("Invalid category", "error", false, 5000);
-                    return;
-                }
-
-                if (files == null) {
-                    RED.notify("Not Selected File for Upload", "error", false, 5000);
+                    filesToUpload = null;
                     return;
                 }
 
@@ -512,13 +259,11 @@
 
                 var data = new FormData();
 
-                $.each(files, function (key, value) {
+                $.each(filesToUpload, function (key, value) {
                     data.append(key, value);
                 });
 
-                var link = "/uiimage/" + category + "/" + files[0].name;
-
-                bar_progress.show();
+                var link = "/uiimage/" + category + "/" + filesToUpload[0].name;
 
                 $.ajax({
                     url: link,
@@ -530,6 +275,8 @@
                     xhr: function () {
                         var xhr = new window.XMLHttpRequest();
                         //Upload progress
+                        bar_progress.val(0);
+                        bar_progress.show();
                         xhr.upload.addEventListener("progress", function (evt) {
                             if (evt.lengthComputable) {
                                 var percentComplete = evt.loaded / evt.total;
@@ -540,41 +287,103 @@
                         return xhr;
                     },
                     success: function (data, textStatus) {
-
-                        that.path = data;
-
-                        input_link.val(data.ref);
-
-                        $("#node-input-upload").val('');
-
-                        input_new_category.val("");
-
-                        let category = data.ref.split('/');
-
-                        getListImages(category[0], data.ref);
-
-                        bar_progress.val(0);
-
-                        viewControl(VIEW_POS_UPLOAD_IMAGE);
-
+                        bar_progress.hide();
+                        updateImageList();
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
+                        bar_progress.hide();
                         RED.notify("Error API: " + errorThrown, "error", false, 5000);
+                        updateImageList();
                     }
                 });
             }
 
-            function copyToClipboard() {
-                var $temp = $("<input>");
-                $("body").append($temp);
-                $temp.val($("#node-input-link").val()).select();
-                document.execCommand("copy");
-                $temp.remove();
+            function removeImage() {
+
+                let category = input_category.val();
+                var file = input_file.val();
+
+                if(!file) return updateImageList();
+
+                $.ajax({
+                    url: 'uiimage/' + category + '/' + file,
+                    type: 'DELETE',
+                    cache: false,
+                    processData: false,
+                    contentType: false,
+                    success: function (data, textStatus) {
+                        updateImageList()
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        RED.notify("Error API: " + errorThrown, "error", false, 5000);
+                        updateImageList();
+                    }
+                });
             }
 
-            $("#bt-copy").click(copyToClipboard);
+            // ----- attach events -----
 
-            $("#node-dialog-confirm-remove").dialog({
+            $("#bt-copy").click(copyLinkToClipboard);
+
+            bt_category_new.click(function () {
+                input_link.val('');
+                input_new_category.val('');
+
+                divCategory.hide();
+                divNewCategory.show();
+                divFile.hide();
+                divNewFile.hide();
+                image_preview.hide();
+
+                input_new_category.focus();
+            });
+            bt_category_cancel.click(function(){
+                updateCategoryList(input_category.val());
+            });
+            bt_category_save.click(saveCategory);
+            bt_category_remove.click(function () {
+                var value = $('#node-input-category').val();
+
+                if (!value) return;
+
+                $("#node-dialog-confirm-remove-category").dialog("open");
+            });
+
+            input_category.change(updateImageList);
+            input_new_category.keypress(function (e) {
+                if (e.which === 13) {
+                    saveCategory();
+                }
+            });
+
+            bt_image_new.click(function () {
+                input_link.val('');
+                $("#node-input-upload").val('');
+                filesToUpload = null;
+
+                divFile.hide();
+                divNewFile.show();
+                image_preview.hide();
+            });
+            bt_image_cancel.click(updateImageList);
+            bt_image_remove.click(function() {
+                var value = $('#node-input-file').val();
+
+                if (!value) return;
+
+                $("#node-dialog-confirm-remove-image").dialog("open");
+            });
+
+            input_file.change(updateImagePreview);
+
+            $("#node-input-upload").on('change', function (event) {
+                filesToUpload = event.target.files;
+            });
+            $("#bt-upload").click(uploadImages);
+
+            // -----------
+
+            $("#node-dialog-confirm-remove-category").dialog({
                 title: "Remove category",
                 autoOpen: false,
                 width: 550,
@@ -599,193 +408,48 @@
                     }
                 ]
             });
+            $("#node-dialog-confirm-remove-image").dialog({
+                title: "Remove image",
+                autoOpen: false,
+                width: 550,
+                height: "auto",
+                buttons: [{
+                        id: "bt-cancel-remove",
+                        text: "Cancel",
 
-            function viewControl(mode) {
-
-                // console.log("Change view: ", mode);
-
-                switch (mode) {
-
-                    case VIEW_INIT:
-
-                        $('#div-category').show();
-                        $('#div-file').hide();
-
-                        $('#div-new-category').hide();
-                        $('#div-new-file').hide();
-
-                        $('#image-preview').hide();
-                        $("#progress-upload").hide();
-
-                        if (that.file !== undefined && that.file !== null) {
-                            $('#div-file').show();
-                            $('#image-preview').show();
+                        click: function () {
+                            $(this).dialog("close");
                         }
+                    },
+                    {
+                        id: "bt-confirm-remove",
+                        text: "Remove",
+                        class: "primary",
 
-                        break;
+                        click: function () {
+                            removeImage();
+                            $(this).dialog("close");
+                        }
+                    }
+                ]
+            });
 
-                    case VIEW_NEW_CATEGORY:
+            // -----------
 
-                        $('#div-category').hide();
-                        $('#div-file').hide();
-
-                        $('#div-new-category').show();
-                        $('#div-new-file').hide();
-
-                        $('#image-preview').hide();
-                        $("#progress-upload").hide();
-
-                        break;
-
-                    case VIEW_NEW_IMAGE:
-
-                        $('#div-category').show();
-                        $('#div-file').hide();
-
-                        $('#div-new-category').hide();
-                        $('#div-new-file').show();
-
-                        $('#image-preview').hide();
-                        $("#progress-upload").hide();
-
-                        break;
-
-                    case VIEW_DIV_FILE:
-                        $('#div-file').show();
-
-                        break;
-
-                    case VIEW_POS_DELETE_IMAGE:
-
-                        $('#div-category').show();
-                        $('#div-file').show();
-
-                        $('#div-new-category').hide();
-                        $('#div-new-file').hide();
-
-                        $('#image-preview').hide();
-                        $("#progress-upload").hide();
-
-                        break;
-
-                    case VIEW_SHOW_IMAGE:
-                        $('#div-category').show();
-                        $('#div-file').show();
-
-                        $('#div-new-category').hide();
-                        $('#div-new-file').hide();
-
-                        $('#image-preview').show();
-                        $("#progress-upload").hide();
-
-                        break;
-
-                    case VIEW_HIDE_IMAGE:
-                        $('#image-preview').hide();
-
-                        break;
-
-                    case VIEW_NOT_CATEGORY:
-
-                        $('#div-category').show();
-                        $('#div-file').hide();
-
-                        $('#div-new-category').hide();
-                        $('#div-new-file').hide();
-
-                        $('#image-preview').hide();
-                        $("#progress-upload").hide();
-
-                        break;
-
-                    case VIEW_SHOW_PROGRESS:
-
-                        $("#progress-upload").show();
-
-                        break;
-
-                    case VIEW_POS_SAVE_CATEGORY:
-
-                        $('#div-category').show();
-                        $('#div-file').show();
-
-                        $('#div-new-category').hide();
-                        $('#div-new-file').hide();
-
-                        $('#image-preview').hide();
-                        $("#progress-upload").hide();
-
-                        break;
-
-                    case VIEW_CHANGE_CATEGORY:
-
-                        $('#div-category').show();
-                        $('#div-file').show();
-
-                        $('#div-new-category').hide();
-                        $('#div-new-file').hide();
-
-                        $('#image-preview').hide();
-                        $("#progress-upload").hide();
-
-
-                        break;
-
-                    case VIEW_NOT_IMAGE:
-
-                        $('#div-category').show();
-                        $('#div-file').show();
-
-                        $('#div-new-category').hide();
-                        $('#div-new-file').hide();
-
-                        $('#image-preview').hide();
-                        $("#progress-upload").hide();
-
-                        break;
-
-                    case VIEW_POS_UPLOAD_IMAGE:
-
-                        $('#div-category').show();
-                        $('#div-file').show();
-
-                        $('#div-new-category').hide();
-                        $('#div-new-file').hide();
-
-                        $('#image-preview').show();
-                        $("#progress-upload").hide();
-
-
-                        break;
-
-                    case VIEW_IMAGE_CANCEL:
-
-                        $('#div-category').show();
-                        $('#div-file').show();
-
-                        $('#div-new-category').hide();
-                        $('#div-new-file').hide();
-
-                        $('#image-preview').hide();
-                        $("#progress-upload").hide();
-
-
-                        break;
-
-                }
-            }
+            bar_progress.hide();
+            updateCategoryList(that.category);
         }
     });
 </script>
 
 <script type="text/x-red" data-template-name="ui_image">
 
-    <div class="hide " id="node-dialog-confirm-remove">
-        <p>
-            <strong>Warning:</strong> When deleting the category, all images will also be deleted.</p>
+    <div class="hide" id="node-dialog-confirm-remove-category">
+        <p><strong>Warning:</strong> This will also delete all images inside. This action cannot be undone. Are you sure?</p>
     </div>
-
-    <!-- Static Layout -->
+    <div class="hide" id="node-dialog-confirm-remove-image">
+        <p><strong>Warning:</strong> This action cannot be undone. Are you sure?</p>
+    </div>
 
     <!-- Name -->
     <div class="form-row">
@@ -815,9 +479,7 @@
 
     <!-- Layout -->
     <div class="form-row">
-        <label>
-            <i class="fa fa-th-large"></i> Layout</label>
-
+        <label><i class="fa fa-th-large"></i> Layout</label>
         <select style="width:70%" id="node-input-layout">
             <option value="adjust">Adjust</option>
             <option value="center">Center</option>
@@ -829,16 +491,11 @@
 
     <!-- Link -->
     <div class="form-row">
-        <label for="node-input-link">
-            <i class="fa fa-link"></i> Link
-        </label>
-
+        <label for="node-input-link"><i class="fa fa-link"></i> Link</label>
         <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
-
             <div style="position: absolute; left: 0px; right: 40px;">
                 <input style="width:100%" type="text" id="node-input-link" readonly>
             </div>
-
             <div class="btn-group" style="position: absolute; right: 0px; top: 0px;">
                 <a id="bt-copy" class="editor-button">
                     <i class="fa fa-clipboard"></i>
@@ -848,141 +505,81 @@
     </div>
     <!-- Link -->
 
-    <!-- Static Layout -->
-
-
-    <!-- Dynamic Layout -->
-
     <!-- Category -->
     <div id="div-category" class="form-row">
-        <label for="node-input-category">
-            <i class="fa fa-tag"></i> Category</label>
-
+        <label for="node-input-category"><i class="fa fa-tag"></i> Category</label>
         <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
-
             <div style="position: absolute; left: 0px; right: 50px;">
                 <select style="width:100%" id="node-input-category">
                 </select>
             </div>
-
             <div class="btn-group" style="position: absolute; right: 0px; top: 0px;">
-
                 <a class="editor-button" data-toggle="dropdown">
                     <i class="fa fa-book"></i>
                     <i class="fa fa-caret-down"></i>
                 </a>
-
                 <ul class="dropdown-menu pull-right" role="menu">
-                    <li>
-                        <a id="bt-category-new" tabindex="-1" href="#">Add new...</a>
-                    </li>
-                    <li>
-                        <a id="bt-category-remove" tabindex="-1" href="#">Remove category...</a>
-                    </li>
+                    <li><a id="bt-category-new" tabindex="-1" href="#">Add new...</a></li>
+                    <li><a id="bt-category-remove" tabindex="-1" href="#">Remove category...</a></li>
                 </ul>
-
             </div>
-
         </div>
-
     </div>
     <!-- Category -->
 
+    <!-- New Category -->
+    <div id="div-new-category" class="form-row">
+        <label for="node-input-new-category"><i class="fa fa-tag"></i> Category</label>
+        <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
+            <div style="position: absolute; left: 0px; right: 75px;">
+                <input style="width:100%" type="text" id="node-input-new-category">
+            </div>
+            <div class="btn-group" style="position: absolute; right: 35px; top: 0px;">
+                <a id="bt-category-save" class="editor-button"><i class="fa fa-check"></i></a>
+            </div>
+            <div class="btn-group" style="position: absolute; right: 0px; top: 0px;">
+                <a id="bt-category-cancel" class="editor-button"><i class="fa fa-times"></i></a>
+            </div>
+        </div>
+    </div>
+    <!-- New Category -->
+
     <!-- File -->
     <div id="div-file" class="form-row">
-        <label for="node-input-file">
-            <i class="fa fa-file-image-o"></i> File</label>
-
+        <label for="node-input-file"><i class="fa fa-file-image-o"></i> File</label>
         <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
-
             <div style="position: absolute; left: 0px; right: 50px;">
                 <select style="width:100%" id="node-input-file">
                 </select>
             </div>
-
             <div class="btn-group" style="position: absolute; right: 0px; top: 0px;">
-
                 <a id="bt-image-options" class="editor-button" data-toggle="dropdown">
                     <i class="fa fa-book"></i>
                     <i class="fa fa-caret-down"></i>
                 </a>
-
                 <ul class="dropdown-menu pull-right" role="menu">
-                    <li>
-                        <a id="bt-image-new" tabindex="-1" href="#">Add new...</a>
-                    </li>
-                    <li>
-                        <a id="bt-image-remove" tabindex="-1" href="#">Remove image...</a>
-                    </li>
+                    <li><a id="bt-image-new" tabindex="-1" href="#">Add new...</a></li>
+                    <li><a id="bt-image-remove" tabindex="-1" href="#">Remove image...</a></li>
                 </ul>
-
             </div>
-
         </div>
-
     </div>
     <!-- File -->
 
-
-    <!-- New Category -->
-    <div id="div-new-category">
-        <div class="form-row">
-            <label for="node-input-newCategory">
-                <i class="fa fa-tag"></i> Category</label>
-
-            <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
-
-                <div style="position: absolute; left: 0px; right: 75px;">
-                    <input style="width:100%" type="text" id="node-input-newCategory">
-                </div>
-
-                <div class="btn-group" style="position: absolute; right: 35px; top: 0px;">
-                    <a id="bt-category-save" class="editor-button">
-                        <i class="fa fa-check"></i>
-                    </a>
-                </div>
-
-                <div class="btn-group" style="position: absolute; right: 0px; top: 0px;">
-                    <a id="bt-category-cancel" class="editor-button">
-                        <i class="fa fa-times"></i>
-                    </a>
-                </div>
-
-            </div>
-        </div>
-    </div>
-    <!-- New Category -->
-
-
-
     <!-- New Image -->
-    <div id="div-new-file">
-
-        <div class="form-row">
-            <label>
-                <i class="fa fa-file-image-o"></i> Add file</label>
-
-            <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
-
-                <div style="position: absolute; left: 0px; right: 75px;">
-                    <input type="file" id="node-input-upload" name="fileuploadfile" style="width: 100%" accept="image/*" multiple>
-                </div>
-
-                <div class="btn-group" style="position: absolute; right: 35px; top: 0px;">
-                    <a id="bt-upload" class="editor-button">
-                        <i class="fa fa-upload"></i>
-                    </a>
-                </div>
-
-                <div class="btn-group" style="position: absolute; right: 0px; top: 0px;">
-                    <a id="bt-image-cancel" class="editor-button">
-                        <i class="fa fa-times"></i>
-                    </a>
-                </div>
-
+    <div id="div-new-file" class="form-row">
+        <label><i class="fa fa-file-image-o"></i> Add file</label>
+        <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
+            <div style="position: absolute; left: 0px; right: 75px;">
+                <input type="file" id="node-input-upload" name="fileuploadfile" style="width: 100%" accept="image/*" multiple>
+            </div>
+            <div class="btn-group" style="position: absolute; right: 35px; top: 0px;">
+                <a id="bt-upload" class="editor-button"><i class="fa fa-upload"></i></a>
+            </div>
+            <div class="btn-group" style="position: absolute; right: 0px; top: 0px;">
+                <a id="bt-image-cancel" class="editor-button"><i class="fa fa-times"></i></a>
             </div>
         </div>
-
     </div>
     <!-- New Image -->
 
@@ -990,12 +587,8 @@
         <progress style="width: 95%; height: 5px" id="progress-upload" value="0" min="0" max="100"></progress>
     </div>
 
-
-
-    <div class="form-row">
-        <div id="preview-image" align="center">
-            <img id="image-preview" style="height:auto; width:95%" src="">
-        </div>
+    <div class="form-row" style="text-align: center">
+        <img id="image-preview" style="height:auto; width:90%" src="">
     </div>
 
     <!-- Dynamic Layout -->
