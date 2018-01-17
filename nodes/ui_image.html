@@ -5,16 +5,14 @@
         defaults: {
             group: {
                 type: 'ui_group',
-                required: false
+                required: true
             },
             name: {
                 value: ''
             },
             width: {
-                value: 5,
+                value: 0,
                 validate: function (v) {
-                    var valid = true
-
                     var width = v || 0;
                     var currentGroup = $('#node-input-group').val() || this.group;
                     var groupNode = RED.nodes.node(currentGroup);
@@ -25,7 +23,7 @@
                 }
             },
             height: {
-                value: 5
+                value: 0
             },
             category: {},
             file: {},
@@ -50,6 +48,16 @@
             const VIEW_NEW_CATEGORY = 'view_new_category';
             const VIEW_NEW_IMAGE = 'view_new_image';
             const VIEW_DIV_FILE = 'view_div_file';
+            const VIEW_POS_DELETE_IMAGE = "view_pos_delete_image";
+            const VIEW_SHOW_IMAGE = 'view_show_image';
+            const VIEW_HIDE_IMAGE = 'view_hide_image';
+            const VIEW_NOT_CATEGORY = 'view_not_category';
+            const VIEW_SHOW_PROGRESS = 'view_show_progress';
+            const VIEW_POS_SAVE_CATEGORY = 'view_pos_save_category';
+            const VIEW_CHANGE_CATEGORY = 'view_change_category';
+            const VIEW_NOT_IMAGE = 'view_not_image';
+            const VIEW_POS_UPLOAD_IMAGE = 'view_pos_upload_image';
+            const VIEW_IMAGE_CANCEL = 'view_image_cancel';
 
             const bt_category_new = $("#bt-category-new");
             const bt_category_cancel = $('#bt-category-cancel');
@@ -61,17 +69,12 @@
             const bt_image_remove = $('#bt-image-remove');
             const bt_image_options = $('#bt-image-options');
 
-            const div_category = $('#div-category');
-            const div_file = $('#div-file');
-            const div_new_category = $('#div-new-category');
-            const div_new_file = $('#div-new-file');
-            const image_preview = $('#image-preview');
-            const bar_progress = $("#progress-upload");
-
             const input_file = $('#node-input-file');
             const input_category = $('#node-input-category');
             const input_link = $('#node-input-link');
             const input_new_category = $("#node-input-newCategory");
+            const image_preview = $('#image-preview');
+            const bar_progress = $("#progress-upload");
 
             var setNewCategory = false;
             var lockUpload = false;
@@ -115,7 +118,6 @@
                     if (selected !== undefined && selected !== null) {
                         if (selected != "not-select") {
                             getListImages(selected, that.file);
-                            div_file.show();
                         }
                     }
                 });
@@ -151,7 +153,7 @@
                             let url = '/uiimage/' + value;
 
                             $("#node-input-link").val(value);
-                            $("#image-preview").attr('src', url).show();
+                            $("#image-preview").attr('src', url);
 
                             this.file = value;
 
@@ -166,7 +168,7 @@
                             let url = '/uiimage/' + value;
 
                             $("#node-input-link").val(value);
-                            $("#image-preview").attr('src', url).show();
+                            $("#image-preview").attr('src', url);
 
                             this.file = value;
 
@@ -176,57 +178,14 @@
                             };
 
                         }
+
+                        viewControl(VIEW_SHOW_IMAGE);
+
                     } else {
                         input_link.val('');
-                        image_preview.hide();
+                        viewControl(VIEW_NOT_IMAGE);
                     }
                 });
-            }
-
-            function viewControl(mode) {
-
-                switch (mode) {
-
-                    case VIEW_INIT:
-
-                        div_new_category.hide();
-                        div_new_file.hide();
-                        bar_progress.hide();
-
-                        div_category.show();
-
-                        div_file.hide();
-
-                        if (that.file !== undefined && that.file !== null) {
-                            div_file.show();
-                            image_preview.show();
-                        } else {
-                            input_file.prop('disebled', true);
-                        }
-
-                        break;
-
-                    case VIEW_NEW_CATEGORY:
-                        image_preview.hide();
-                        div_new_file.hide();
-                        div_file.hide();
-                        div_category.hide();
-                        div_new_category.show();
-                        break;
-
-                    case VIEW_NEW_IMAGE:
-                        div_file.hide();
-                        image_preview.hide();
-                        div_new_file.show();
-
-                        break;
-
-                    case VIEW_DIV_FILE:
-                        div_file.show();
-
-                        break;
-
-                }
             }
 
             bt_category_new.click(function () {
@@ -241,28 +200,19 @@
 
             bt_category_cancel.click(function () {
 
-                viewControl(VIEW_INIT);
-
                 let category = input_category.val();
 
                 getListCategories(category);
 
                 setNewCategory = false;
 
-                if (category !== null && category !== 'not-select') {
-                    div_file.show();
-                    image_preview.show();
-                } else {
-                    div_file.hide();
-                    image_preview.hide();
-                }
+                viewControl(VIEW_INIT);
 
             });
 
             bt_image_cancel.click(function () {
+                getListCategories(input_category.val());
                 viewControl(VIEW_INIT);
-                div_file.show();
-                image_preview.show();
             });
 
             bt_image_remove.click(function () {
@@ -284,25 +234,21 @@
                     contentType: false,
                     success: function (data, textStatus) {
 
-                        that.path = null;
+                        that.path = {
+                            path: null,
+                            ref: null
+                        };
 
                         let category = input_category.val();
 
-                        getListCategories(category);
-
-                        input_file.find("option").remove().end();
+                        getListImages(category, undefined);
 
                         input_link.val("");
 
-                        viewControl(VIEW_INIT);
-
-                        div_file.show();
-
-                        image_preview.hide();
-
+                        viewControl(VIEW_POS_DELETE_IMAGE);
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
-                        console.log('ERRORS: ' + errorThrown);
+                        RED.notify("Error API: " + errorThrown, "error", false, 5000);
                     }
                 });
             });
@@ -333,7 +279,10 @@
                     contentType: false,
                     success: function (data, textStatus) {
 
-                        that.path = null;
+                        that.path = {
+                            path: null,
+                            ref: null
+                        };
 
                         getListCategories(undefined);
 
@@ -342,13 +291,9 @@
                         input_link.val("");
 
                         viewControl(VIEW_INIT);
-
-                        div_file.hide();
-                        image_preview.hide();
-
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
-                        console.log('ERRORS: ' + errorThrown);
+                        RED.notify("Error API: " + errorThrown, "error", false, 5000);
                     }
                 });
             };
@@ -362,8 +307,9 @@
                 if (value === "not-select") {
                     input_file.find('option').remove().end();
                     input_link.val("");
-                    image_preview.hide();
-                    div_file.hide();
+
+                    viewControl(VIEW_NOT_CATEGORY);
+
                     that.path = {
                         path: null,
                         ref: null
@@ -372,8 +318,8 @@
                 }
 
                 if (value !== null) {
-                    div_file.show();
-                    getListImages(value);
+                    getListImages(value, undefined);
+                    viewControl(VIEW_CHANGE_CATEGORY);
                 }
             }
 
@@ -384,7 +330,9 @@
                 if (value != null && value != undefined) {
                     var url = '/uiimage/' + value;
                     input_link.val(value);
-                    image_preview.attr('src', url).show();
+                    image_preview.attr('src', url);
+
+                    viewControl(VIEW_SHOW_IMAGE);
 
                     that.path = {
                         path: url,
@@ -393,7 +341,7 @@
 
                 } else {
                     input_link.val("");
-                    image_preview.hide();
+                    viewControl(VIEW_HIDE_IMAGE);
                 }
             });
 
@@ -468,7 +416,7 @@
 
                 var link = "/uiimage/category/";
 
-                bar_progress.show();
+                viewControl(VIEW_SHOW_PROGRESS);
 
                 $.ajax({
                     url: link,
@@ -494,18 +442,19 @@
 
                         getListCategories(data.category);
 
-                        div_new_category.hide();
-                        bar_progress.val(0).hide();
-                        div_category.show();
+                        bar_progress.val(0);
 
                         input_category.val(data.category);
 
                         that.category = data.category;
 
                         setNewCategory = false;
+
+                        viewControl(VIEW_POS_SAVE_CATEGORY);
+
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
-                        console.log('ERRORS: ', errorThrown, textStatus, jqXHR);
+                        RED.notify("Error API: " + errorThrown, "error", false, 5000);
                     }
                 });
             }
@@ -604,15 +553,13 @@
 
                         getListImages(category[0], data.ref);
 
-                        bar_progress.val(0).hide();
+                        bar_progress.val(0);
 
-                        viewControl(VIEW_INIT);
-
-                        div_file.show();
+                        viewControl(VIEW_POS_UPLOAD_IMAGE);
 
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
-                        console.log('ERRORS: ', errorThrown, textStatus, jqXHR);
+                        RED.notify("Error API: " + errorThrown, "error", false, 5000);
                     }
                 });
             }
@@ -633,6 +580,14 @@
                 width: 550,
                 height: "auto",
                 buttons: [{
+                        id: "bt-cancel-remove",
+                        text: "Cancel",
+
+                        click: function () {
+                            $(this).dialog("close");
+                        }
+                    },
+                    {
                         id: "bt-confirm-remove",
                         text: "Remove",
                         class: "primary",
@@ -641,18 +596,184 @@
                             removeCategory();
                             $(this).dialog("close");
                         }
-                    },
-                    {
-                        id: "bt-cancel-remove",
-                        text: "Cancel",
-                        class: "primary",
-
-                        click: function () {
-                            $(this).dialog("close");
-                        }
                     }
                 ]
             });
+
+            function viewControl(mode) {
+
+                // console.log("Change view: ", mode);
+
+                switch (mode) {
+
+                    case VIEW_INIT:
+
+                        $('#div-category').show();
+                        $('#div-file').hide();
+
+                        $('#div-new-category').hide();
+                        $('#div-new-file').hide();
+
+                        $('#image-preview').hide();
+                        $("#progress-upload").hide();
+
+                        if (that.file !== undefined && that.file !== null) {
+                            $('#div-file').show();
+                            $('#image-preview').show();
+                        }
+
+                        break;
+
+                    case VIEW_NEW_CATEGORY:
+
+                        $('#div-category').hide();
+                        $('#div-file').hide();
+
+                        $('#div-new-category').show();
+                        $('#div-new-file').hide();
+
+                        $('#image-preview').hide();
+                        $("#progress-upload").hide();
+
+                        break;
+
+                    case VIEW_NEW_IMAGE:
+
+                        $('#div-category').show();
+                        $('#div-file').hide();
+
+                        $('#div-new-category').hide();
+                        $('#div-new-file').show();
+
+                        $('#image-preview').hide();
+                        $("#progress-upload").hide();
+
+                        break;
+
+                    case VIEW_DIV_FILE:
+                        $('#div-file').show();
+
+                        break;
+
+                    case VIEW_POS_DELETE_IMAGE:
+
+                        $('#div-category').show();
+                        $('#div-file').show();
+
+                        $('#div-new-category').hide();
+                        $('#div-new-file').hide();
+
+                        $('#image-preview').hide();
+                        $("#progress-upload").hide();
+
+                        break;
+
+                    case VIEW_SHOW_IMAGE:
+                        $('#div-category').show();
+                        $('#div-file').show();
+
+                        $('#div-new-category').hide();
+                        $('#div-new-file').hide();
+
+                        $('#image-preview').show();
+                        $("#progress-upload").hide();
+
+                        break;
+
+                    case VIEW_HIDE_IMAGE:
+                        $('#image-preview').hide();
+
+                        break;
+
+                    case VIEW_NOT_CATEGORY:
+
+                        $('#div-category').show();
+                        $('#div-file').hide();
+
+                        $('#div-new-category').hide();
+                        $('#div-new-file').hide();
+
+                        $('#image-preview').hide();
+                        $("#progress-upload").hide();
+
+                        break;
+
+                    case VIEW_SHOW_PROGRESS:
+
+                        $("#progress-upload").show();
+
+                        break;
+
+                    case VIEW_POS_SAVE_CATEGORY:
+
+                        $('#div-category').show();
+                        $('#div-file').show();
+
+                        $('#div-new-category').hide();
+                        $('#div-new-file').hide();
+
+                        $('#image-preview').hide();
+                        $("#progress-upload").hide();
+
+                        break;
+
+                    case VIEW_CHANGE_CATEGORY:
+
+                        $('#div-category').show();
+                        $('#div-file').show();
+
+                        $('#div-new-category').hide();
+                        $('#div-new-file').hide();
+
+                        $('#image-preview').hide();
+                        $("#progress-upload").hide();
+
+
+                        break;
+
+                    case VIEW_NOT_IMAGE:
+
+                        $('#div-category').show();
+                        $('#div-file').show();
+
+                        $('#div-new-category').hide();
+                        $('#div-new-file').hide();
+
+                        $('#image-preview').hide();
+                        $("#progress-upload").hide();
+
+                        break;
+
+                    case VIEW_POS_UPLOAD_IMAGE:
+
+                        $('#div-category').show();
+                        $('#div-file').show();
+
+                        $('#div-new-category').hide();
+                        $('#div-new-file').hide();
+
+                        $('#image-preview').show();
+                        $("#progress-upload").hide();
+
+
+                        break;
+
+                    case VIEW_IMAGE_CANCEL:
+
+                        $('#div-category').show();
+                        $('#div-file').show();
+
+                        $('#div-new-category').hide();
+                        $('#div-new-file').hide();
+
+                        $('#image-preview').hide();
+                        $("#progress-upload").hide();
+
+
+                        break;
+
+                }
+            }
         }
     });
 </script>
