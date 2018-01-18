@@ -149,9 +149,6 @@ module.exports = function (RED) {
         var error = [];
         var success = [];
 
-        //TODO: debug form data
-        console.log('>> POST IMAGE - BODY', require('util').inspect(req));
-
         var form = new formidable.IncomingForm();
         form.multiples = true;
         form.uploadDir = pathUpload;
