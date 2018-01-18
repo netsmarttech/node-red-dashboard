@@ -1,7 +1,3 @@
-<md-card
-    ui-image="me.item.format"
-    ui-card-size="{{ me.item.width }}x{{ me.item.height }}"
-    class="nr-dashboard-image"
-    ng-class="{'nr-dashboard-disabled':me.item.disabled}"
->
+<md-card ui-card-size="{{ me.item.width }}x{{ me.item.height }}" class="nr-dashboard-image" ng-class="{'nr-dashboard-disabled':me.item.disabled}">
+    <div ng-style="me.item.style"></div>
 </md-card>

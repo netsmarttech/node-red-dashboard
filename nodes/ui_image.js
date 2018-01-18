@@ -11,29 +11,15 @@ module.exports = function (RED) {
         RED.nodes.createNode(this, config);
 
         var node = this;
-
-        var currentImage = null;
-
-        var processImage = null;
-
-        if (config.path === undefined) {
-            config.path = {
-                path: null,
-                ref: null
-            };
-        }
-
-        var image;
-
-        var defines;
+        var tab, elmStyle;
+        var link = null,
+            layout = 'adjust';
 
         var group = RED.nodes.getNode(config.group);
 
         if (!group) {
             return;
         }
-
-        var tab = null;
 
         tab = RED.nodes.getNode(group.config.tab);
         if (!tab) {
@@ -43,162 +29,95 @@ module.exports = function (RED) {
             config.width = group.config.width;
         }
 
-        image = "<div ng-style=\"msg.image\"></div>";
+        elmStyle = {
+            'width': '100%',
+            'height': '100%'
+        };
 
-        function defineLayout(layout) {
+        if (config.category && config.file) {
+            link = '/uiimage/' + config.category + '/' + config.file;
+        }
+        if (config.layout) {
+            layout = config.layout;
+        }
 
-            defines = {};
+        function processLayout(layout) {
 
             switch (layout) {
 
                 case 'adjust':
-
-                    defines = {
-                        'width': '100%',
-                        'height': '100%',
-                        'background-size': 'contain',
-                        'background-position': 'center',
-                        'background-repeat': 'no-repeat',
-                        'background-image': "url('" + config.path.path + "')"
-                    };
-
+                    elmStyle['background-size'] = 'contain';
+                    elmStyle['background-position'] = 'center';
+                    elmStyle['background-repeat'] = 'no-repeat';
                     break;
 
                 case 'center':
-
-                    defines = {
-                        'width': '100%',
-                        'height': '100%',
-                        'background-position': 'center',
-                        'background-repeat': 'no-repeat',
-                        'background-image': "url('" + config.path.path + "')"
-                    };
-
+                    elmStyle['background-size'] = '';
+                    elmStyle['background-position'] = 'center';
+                    elmStyle['background-repeat'] = 'no-repeat';
                     break;
 
                 case 'expand':
-
-                    defines = {
-                        'width': '100%',
-                        'height': '100%',
-                        'background-size': 'cover',
-                        'background-position': 'center',
-                        'background-repeat': 'no-repeat',
-                        'background-image': "url('" + config.path.path + "')"
-                    };
-
+                    elmStyle['background-size'] = 'cover';
+                    elmStyle['background-position'] = 'center';
+                    elmStyle['background-repeat'] = 'no-repeat';
                     break;
 
                 case 'side':
-
-                    defines = {
-                        'width': '100%',
-                        'height': '100%',
-                        'background-repeat': 'repeat',
-                        'background-image': "url('" + config.path.path + "')"
-                    };
-
+                    elmStyle['background-size'] = '';
+                    elmStyle['background-position'] = '';
+                    elmStyle['background-repeat'] = 'repeat';
                     break;
 
                 default:
-
-                    defines = {
-                        'width': '100%',
-                        'height': '100%',
-                        'background-size': 'contain',
-                        'background-position': 'center',
-                        'background-repeat': 'no-repeat',
-                        'background-image': "url('" + config.path.path + "')"
-                    };
-
+                    elmStyle['background-size'] = 'contain';
+                    elmStyle['background-position'] = 'center';
+                    elmStyle['background-repeat'] = 'no-repeat';
                     node.warn("Invalid Layout - " + layout);
-
                     break;
-
             }
-
-            if (currentImage != null) {
-                node.emit('input', {
-                    payload: null
-                });
-            }
-
         }
-
-        defineLayout(config.layout);
 
         var done = ui.add({
             emitOnlyNewValues: false,
             node: node,
             tab: tab,
             group: group,
+            emitOnlyNewValues: false,
             control: {
-                type: 'template',
-                width: config.width || 6,
-                height: config.height || config.width,
-                format: image
+                type: 'image',
+                order: config.order,
+                width: parseInt(config.width) || 6,
+                height: parseInt(config.height) || parseInt(config.width) || 6,
+                format: '{{msg.payload}}'
             },
-            beforeEmit: function (msg, value) {
+            beforeEmit: function (msg) {
 
-                let link;
-
-                if (msg.payload !== undefined || msg.url !== undefined) {
-
-                    if (typeof value === 'string') {
-                        link = "/uiimage/" + value;
-                    } else {
-                        link = "/uiimage/" + value.category + "/" + value.name;
-                    }
-
-                    if (msg.url !== undefined) {
-                        link = msg.url;
-                    }
-
-                    processImage = link;
-
-                    if (msg.initialImage !== undefined) {
-                        processImage = msg.initialImage;
-                    }
-
-                } else {
-                    link = processImage;
-                }
-
+                //process current layout
                 if (msg.layout !== undefined) {
-                    defineLayout(msg.layout);
+                    layout = msg.layout;
                 }
+                processLayout(layout);
 
-                if (msg.init != true) {
-                    defines['background-image'] = "url('" + link + "')";
-                    msg.image = defines;
-                } else {
-                    msg.image = value;
+                //process current image
+                if (msg.url !== undefined) {
+                    link = msg.url;
+                } else if (msg.payload !== undefined) {
+                    if (typeof msg.payload === 'string') {
+                        link = msg.payload ? '/uiimage/' + msg.payload : '';
+                    } else if (msg.payload.category && msg.payload.name) {
+                        link = '/uiimage/' + msg.payload.category + '/' + msg.payload.name;
+                    }
                 }
-
-                var properties = Object.getOwnPropertyNames(msg).filter(function (p) {
-                    return p[0] != '_';
-                });
-
-                var clonedMsg = {};
-
-                for (var i = 0; i < properties.length; i++) {
-                    var property = properties[i];
-                    clonedMsg[property] = msg[property];
-                }
+                elmStyle['background-image'] = link ? "url('" + link + "')" : ''
 
                 return {
-                    msg: clonedMsg
-                };
-
+                    style: elmStyle
+                }
             }
         });
 
-        node.emit('input', {
-            init: true,
-            payload: defines,
-            initialImage: config.path.path
-        });
-
+        node.emit('input', {}); //triggers the configured image
         node.on("close", done);
     }
     RED.nodes.registerType("ui_image", ImageNode);
@@ -227,7 +146,7 @@ module.exports = function (RED) {
         var success = [];
 
         //TODO: debug form data
-        console.log('>> POST IMAGE - BODY', req.body);
+        console.log('>> POST IMAGE - BODY', require('util').inspect(req));
 
         var form = new formidable.IncomingForm();
         form.multiples = true;
@@ -351,12 +270,13 @@ module.exports = function (RED) {
     function restListCategories(req, res) {
 
         let responseDone = false
-        function doResponse(code, data){
-            if(responseDone) return;
+
+        function doResponse(code, data) {
+            if (responseDone) return;
             responseDone = true;
 
             res.status(code);
-            if(data) res.json(data);
+            if (data) res.json(data);
             res.end();
         }
 
@@ -372,7 +292,7 @@ module.exports = function (RED) {
 
             var numFiles = files.length;
 
-            if(!numFiles) {
+            if (!numFiles) {
                 doResponse(200, response);
                 return;
             }
@@ -386,7 +306,7 @@ module.exports = function (RED) {
                         doResponse(500, err);
                         return;
                     }
-                    
+
                     numFiles--;
 
                     if (stat.isDirectory()) {
@@ -414,7 +334,7 @@ module.exports = function (RED) {
 
         listFilesDir(pathCategory, (err, files) => {
             if (err) {
-                if(err.code === 'ENOENT') {
+                if (err.code === 'ENOENT') {
                     res.status(404).end();
                 } else {
                     res.status(500).json(err).end();
@@ -493,12 +413,12 @@ module.exports = function (RED) {
         let categoryPath = path.join(pathDir, sanitizeInput(req.params.category));
         let responseDone = false;
 
-        function doResponse(code, data){
-            if(responseDone) return;
+        function doResponse(code, data) {
+            if (responseDone) return;
             responseDone = true;
 
             res.status(code)
-            if(data) res.json(data);
+            if (data) res.json(data);
             res.end();
         }
 
@@ -564,6 +484,7 @@ module.exports = function (RED) {
 function listFilesDir(pathDir, cb) {
 
     let callbackDone = false;
+
     function doCallback(err, data) {
         if (callbackDone) return;
         callbackDone = true;
@@ -611,7 +532,7 @@ function listFilesDir(pathDir, cb) {
 }
 
 // inspired on https://github.com/parshap/node-sanitize-filename
-const sanitizeInput = (function(str){
+const sanitizeInput = (function (str) {
     const illegalRe = /[\/\?<>\\:\*\|":]/g;
     const controlRe = /[\x00-\x1f\x80-\x9f]/g;
     const reservedRe = /^\.+$/;
