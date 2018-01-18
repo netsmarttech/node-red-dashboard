@@ -45,36 +45,41 @@ module.exports = function (RED) {
 
             switch (layout) {
 
-                case 'adjust':
+                case 'adjust': {
                     elmStyle['background-size'] = 'contain';
                     elmStyle['background-position'] = 'center';
                     elmStyle['background-repeat'] = 'no-repeat';
                     break;
+                }
 
-                case 'center':
+                case 'center': {
                     elmStyle['background-size'] = '';
                     elmStyle['background-position'] = 'center';
                     elmStyle['background-repeat'] = 'no-repeat';
                     break;
+                }
 
-                case 'expand':
+                case 'expand': {
                     elmStyle['background-size'] = 'cover';
                     elmStyle['background-position'] = 'center';
                     elmStyle['background-repeat'] = 'no-repeat';
                     break;
+                }
 
-                case 'side':
+                case 'side': {
                     elmStyle['background-size'] = '';
                     elmStyle['background-position'] = '';
                     elmStyle['background-repeat'] = 'repeat';
                     break;
+                }
 
-                default:
+                default: {
                     elmStyle['background-size'] = 'contain';
                     elmStyle['background-position'] = 'center';
                     elmStyle['background-repeat'] = 'no-repeat';
                     node.warn("Invalid Layout - " + layout);
                     break;
+                }
             }
         }
 
@@ -83,7 +88,6 @@ module.exports = function (RED) {
             node: node,
             tab: tab,
             group: group,
-            emitOnlyNewValues: false,
             control: {
                 type: 'image',
                 order: config.order,
@@ -272,11 +276,15 @@ module.exports = function (RED) {
         let responseDone = false
 
         function doResponse(code, data) {
-            if (responseDone) return;
+            if (responseDone) {
+                return;
+            }
             responseDone = true;
 
             res.status(code);
-            if (data) res.json(data);
+            if (data) {
+                res.json(data);
+            }
             res.end();
         }
 
@@ -319,7 +327,7 @@ module.exports = function (RED) {
                 });
             });
         });
-    }; //--> GET /uiimage
+    } //--> GET /uiimage
     RED.httpAdmin.get("/uiimage", restListCategories);
 
     /**
@@ -414,11 +422,15 @@ module.exports = function (RED) {
         let responseDone = false;
 
         function doResponse(code, data) {
-            if (responseDone) return;
+            if (responseDone) {
+                return;
+            }
             responseDone = true;
 
             res.status(code)
-            if (data) res.json(data);
+            if (data) {
+                res.json(data);
+            }
             res.end();
         }
 
@@ -486,7 +498,9 @@ function listFilesDir(pathDir, cb) {
     let callbackDone = false;
 
     function doCallback(err, data) {
-        if (callbackDone) return;
+        if (callbackDone) {
+            return;
+        }
         callbackDone = true;
         cb(err, data);
     }
