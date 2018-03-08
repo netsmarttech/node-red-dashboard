@@ -233,6 +233,7 @@ function add(opt) {
             addField("label");
             addField("format");
             addField("color");
+            addField("units");
             if (msg.hasOwnProperty("enabled")) { toEmit.disabled = !msg.enabled; }
             toEmit.id = toStore.id = opt.node.id;
 
@@ -499,7 +500,7 @@ function addLink(name, link, icon, order, target) {
 
 function addBaseConfig(config) {
     if (config) { baseConfiguration = config; }
-    mani.name = config.site.name;
+    mani.name = config.site ? config.site.name : "Node-RED Dashboard";
     mani.short_name = mani.name.replace("Node-RED","").trim();
     mani.background_color = config.theme.themeState["page-titlebar-backgroundColor"].value;
     mani.theme_color = config.theme.themeState["page-titlebar-backgroundColor"].value;

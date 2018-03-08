@@ -43,6 +43,7 @@ module.exports = function (RED) {
             node: node,
             tab: tab,
             group: group,
+            emitOnlyNewValues: false,
             control: {
                 type: 'gauge',
                 name: config.name,
@@ -65,7 +66,13 @@ module.exports = function (RED) {
                 waveoptions: waveoptions,
                 options: null
             },
-            convert: ui.toFloat.bind(this, config)
+            convert: function(p,o,m) {
+                var form = config.format.replace(/{{/g,"").replace(/}}/g,"").replace(/\s/g,"");
+                var value = RED.util.getMessageProperty(m,form);
+                if (value !== undefined) { return parseFloat(value) || 0; }
+                return parseFloat(p) || 0;
+                //return ui.toFloat.bind(this, config);
+            }
         });
         node.on("close", done);
     }

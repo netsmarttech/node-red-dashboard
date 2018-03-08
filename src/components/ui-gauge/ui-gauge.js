@@ -88,7 +88,7 @@ angular.module('ui').directive('uiGauge', [ '$timeout', '$interpolate',
                                     pointer: true,
                                     relativeGaugeSize: true,
                                     textRenderer: function(v) {
-                                        return scope.$eval('me.item.getText()');
+                                        return scope.$eval('me.item.getText()') || 0;
                                     }
                                 }
                                 if (scope.$eval('me.item.gtype') === 'donut') {
@@ -131,7 +131,15 @@ angular.module('ui').directive('uiGauge', [ '$timeout', '$interpolate',
                                 }
 
                                 gauge = new JustGage(gaugeOptions);
+                                gauge.refreshLabel = function(label) { var obj = this; if (label && (typeof label == "string")) { obj.txtLabel.attr({ "text": label }); }}
+
+                                var oldUnits = "";
                                 unreg = scope.$watch('me.item.value', function(newValue) {
+                                    if (scope.$eval('me.item.getUnits()') !== oldUnits) {
+                                        oldUnits = scope.$eval('me.item.getUnits()');
+                                        gaugeOptions.label = oldUnits;
+                                        gauge.refreshLabel(oldUnits);
+                                    }
                                     if (scope.$eval('me.item.gtype') === 'compass') {
                                         var r = gaugeOptions.max - gaugeOptions.min;
                                         newValue = newValue % r;

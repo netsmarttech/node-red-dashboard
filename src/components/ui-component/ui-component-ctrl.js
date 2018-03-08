@@ -16,6 +16,10 @@ angular.module('ui').controller('uiComponentController', ['$scope', 'UiEvents', 
             me.item.getColor = $interpolate(me.item.color).bind(null, me.item);
         }
 
+        if (typeof me.item.units === "string") {
+            me.item.getUnits = $interpolate(me.item.units).bind(null, me.item);
+        }
+
         me.init = function () {
             switch (me.item.type) {
                 case 'button': {
@@ -67,7 +71,11 @@ angular.module('ui').controller('uiComponentController', ['$scope', 'UiEvents', 
                         }
                     };
 
-                    var range = me.item.max - me.item.min;
+                    var regex = /({{([^}}]+)}})/ig
+                    var fl = me.item.format.replace(regex, "").length * 9.5;
+                    var mnw = (me.item.min + me.item.step).toString().length * 9.5;
+                    var mxw = (me.item.max + me.item.step).toString().length * 9.5;
+                    me.item.minWidth = (mnw > mxw ? mnw : mxw) + fl;
                     var promise = null;
                     me.periodicChange = function (delta) {
                         changeValue(delta);
