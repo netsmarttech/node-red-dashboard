@@ -1,3 +1,5 @@
+"use strict";
+
 var formidable = require('formidable');
 var fs = require('fs');
 var path = require('path');
